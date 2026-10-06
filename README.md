@@ -1,123 +1,107 @@
-# PeakForge
+# SlickFit
 
-**A Physiological Performance-Simulation & Optimal Taper Engine**
+**SlickFit is an India-first, running-first event-preparation coach.** It helps an athlete prepare for an event through a practical loop:
 
-PeakForge is an offline, single-language (Python) application that models
-an athlete's fitness and fatigue as a dynamical system from their own
-training history, and computes the optimal training-load sequence leading
-up to a target event date so that predicted performance peaks exactly
-when it matters.
+**Plan → Train → Track → Evaluate → Adapt → Repeat**
 
-Unlike conventional fitness apps, which either passively record completed
-workouts or issue generic templated training plans, PeakForge simulates
-how an individual's performance evolves under different training
-scenarios and solves for the scenario that maximizes performance on a
-chosen date.
+The current repository is a local development prototype. It includes a React/Vite frontend, a FastAPI backend, SQLite persistence, deterministic planning/adaptation logic, and a separate archived PeakForge prototype. It is not a medical product and does not replace a qualified coach or clinician.
 
-## How it works
+## Current scope
 
-1. **Simulation engine** — implements the Banister Impulse-Response
-   (Fitness-Fatigue) model as a discrete-time simulation: each day's
-   training load feeds two exponentially decaying accumulators, Fitness
-   (slow decay) and Fatigue (fast decay). Predicted performance is the
-   difference between the two, scaled by fitted weights.
-2. **Personalized parameter fitting** — fits the model's parameters to
-   an individual athlete's own logged training and performance-test
-   history via least-squares regression over a grid of physiologically
-   plausible time constants — no black-box ML library.
-3. **Optimal taper search** — given a target event date, a
-   from-scratch Genetic Algorithm searches the space of possible future
-   daily training loads to find the sequence that maximizes predicted
-   performance on that date, subject to realistic constraints (maximum
-   load, maximum day-to-day increase).
-4. **Local storage & UIs** — training sessions, performance tests, and
-   fitted parameters are stored in a local SQLite database; the Flet
-   desktop UI and FastAPI-backed React dashboard both let the user log
-   sessions, fit their model, and run the optimizer.
+The SlickFit app is intended to support:
 
-Everything runs fully offline — no external API, wearable device, or
-cloud service is required.
+- Local account registration and demo profiles.
+- Event setup and athlete onboarding.
+- A running-first preparation plan, with custom-event setup.
+- Daily training, activity logging, and recovery check-ins.
+- Plan adaptation and revision history.
+- General nutrition guidance and progress views.
+- User-scoped records and corrections with an audit trail.
 
-## Project structure
+Plans are recommendations. The user remains in control. Missed workouts should not be blindly stacked onto later days. Sparse inputs and estimates must be treated as uncertain. SlickFit does not diagnose or treat medical conditions.
 
-```
-PeakForge/
-├── main.py                     # application entry point
-├── requirements.txt
-├── data/
-│   └── sample_training_log.csv # synthetic demo data
-├── src/peakforge/
-│   ├── models.py                # TrainingSession, PerformanceTest, AthleteParams
-│   ├── simulation.py            # Banister Fitness-Fatigue simulation engine
-│   ├── fitting.py                # least-squares personalized parameter fitting
-│   ├── optimizer.py              # Genetic Algorithm optimal taper search
-│   ├── storage.py                # SQLite persistence layer
-│   ├── app.py                    # Flet UI
-│   └── api.py                    # FastAPI HTTP layer
-├── frontend/                     # Vite + React dashboard
-└── tests/
-    ├── test_simulation.py
-    ├── test_fitting.py
-    ├── test_optimizer.py
-    ├── test_storage.py
-    └── test_api.py
+## Repository layout
+
+```text
+.
+├── frontend/                 # React + Vite web app
+├── src/slickfit/             # FastAPI app, domain logic, auth and database models
+├── src/peakforge/            # Retained PeakForge compatibility API/code
+├── alembic/                  # Database migrations
+├── tests/                    # Backend unit and integration tests
+├── PeakForge/                # Original PeakForge project snapshot
+└── SlickFit_Antigravity_Build_Spec.md
 ```
 
-## Setup
+## Requirements
+
+- Python 3.11 or newer (the local project virtual environment may use a newer Python version).
+- Node.js and npm.
+
+## Run locally
+
+From the repository root, create and activate a virtual environment if one is not already present, then install the Python dependencies:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Running the app
+Apply the database schema:
 
 ```bash
-python main.py
+./.venv/bin/alembic upgrade head
 ```
 
-## Running the API
+Start the backend in one terminal:
 
 ```bash
-uvicorn src.peakforge.api:app --reload
+cd /Users/nico/Developer/SlickFit
+./.venv/bin/uvicorn src.slickfit.api.app:app --host 127.0.0.1 --port 8001
 ```
 
-## Running the React frontend
-
-Run both halves together from separate terminals:
+Start the frontend in a second terminal:
 
 ```bash
-# Terminal 1
-uvicorn src.peakforge.api:app --reload
-
-# Terminal 2
-cd frontend
+cd /Users/nico/Developer/SlickFit/frontend
 npm install
-npm run dev
+VITE_API_URL=http://127.0.0.1:8001/api/v1 npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 ```
 
-## Running the tests
+Open <http://127.0.0.1:5173>. Keep both terminal processes running while using the app. Stop each server with `Ctrl+C`.
+
+If a port is already in use, an earlier server may still be running. Check the existing app before starting another copy. The default local database is `slickfit.db` in the repository root; back it up before manually changing or deleting it.
+
+## API health and docs
+
+- Health: <http://127.0.0.1:8001/health>
+- OpenAPI docs: <http://127.0.0.1:8001/docs>
+
+## Tests and frontend build
+
+From the repository root:
 
 ```bash
-pytest -v
+./.venv/bin/pytest
 ```
 
-## Tech stack
+For the frontend production build:
 
-| Layer                | Technology                                             |
-|-----------------------|---------------------------------------------------------|
-| Language              | Python 3.11+                                            |
-| Numerical computing   | NumPy                                                    |
-| Core algorithms       | Hand-implemented Banister simulation, least-squares fitting, Genetic Algorithm |
-| Data storage          | SQLite (`sqlite3`)                                        |
-| API                   | FastAPI, Uvicorn                                        |
-| UI                    | Flet, React, Vite                                       |
-| Visualization         | Matplotlib, Recharts                                    |
-| Testing               | pytest                                                   |
+```bash
+cd frontend
+npm run build
+```
 
-## Status
+Run these checks locally before treating a change as verified. A successful build or test suite does not establish sports-science validity or production readiness.
 
-Zeroth-review stage — core simulation, fitting, optimization, storage,
-and UI scaffolding are implemented and unit-tested. See the project
-report for the full methodology, timeline, and references.
+## Prototype limitations
+
+- SQLite and the local demo flow are for local development and demonstration. Do not expose them as a production multi-user service without a security, deployment, and data-retention review.
+- No wearable integration, payment processing, medical diagnosis, or validated race-time prediction is claimed.
+- Training recommendations are deterministic MVP guidance and need appropriate domain review before use as high-stakes coaching advice.
+- Keep secrets out of source control. Production requires deployment-specific secrets, HTTPS, secure authentication/session settings, migrations, backups, and monitoring.
+
+## License and project status
+
+See the repository for current licensing and project status. Do not infer production readiness from the presence of tests or demo screens.
