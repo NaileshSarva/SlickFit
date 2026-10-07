@@ -77,7 +77,7 @@ export default function Profile({
         <div className="card">
           <div className="card-header">
             <div>
-              <h2 className="card-title">👤 Athlete Account & Profile</h2>
+              <h2 className="card-title">Athlete Account & Profile</h2>
               <p className="card-subtitle">Manage personal information and preferences</p>
             </div>
             {user?.is_demo && <span className="tag tag-orange">Demo Mode</span>}
@@ -156,7 +156,7 @@ export default function Profile({
         <div className="card">
           <div className="card-header">
             <div>
-              <h2 className="card-title">🎯 Active Target Event</h2>
+              <h2 className="card-title">Active Target Event</h2>
               <p className="card-subtitle">Current preparation target</p>
             </div>
             <span className="tag tag-cyan">{activeEvent?.sport || activeEvent?.kind || "Running"}</span>
@@ -218,7 +218,7 @@ export default function Profile({
       <div className="card" style={{ marginTop: "22px" }}>
         <div className="card-header">
           <div>
-            <h2 className="card-title">🔒 Immutable Data Amendment Audit Trail</h2>
+            <h2 className="card-title">Immutable Data Amendment Audit Trail</h2>
             <p className="card-subtitle">
               All manual changes to logged activities are preserved with mandatory reasoning.
             </p>
@@ -256,7 +256,7 @@ export default function Profile({
                   <span style={{ color: "var(--accent-primary)" }}>"{a.new_value}"</span>
                 </div>
                 <p style={{ fontSize: "12px", color: "var(--accent-cyan)", marginTop: "4px" }}>
-                  📝 <strong>Audit Reason:</strong> {a.amendment_reason}
+                  <strong>Audit Reason:</strong> {a.amendment_reason}
                 </p>
               </div>
             ))

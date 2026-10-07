@@ -30,6 +30,7 @@ SessionLocal = sessionmaker(
 
 def init_db() -> None:
     """Create all tables in the database (used for local/test setup)."""
+    from . import models  # noqa: F401
     Base.metadata.create_all(bind=engine)
 
 

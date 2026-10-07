@@ -124,7 +124,6 @@ export default function Train({ currentPlan, todayCheckIn, onWorkoutLogged, onNa
 
       {isRedFlagActive ? (
         <div className="card" style={{ border: "2px solid var(--accent-crimson)", background: "rgba(239, 68, 68, 0.08)", padding: "36px 24px", textAlign: "center" }}>
-          <div style={{ fontSize: "52px", marginBottom: "16px" }}>🛑</div>
           <h2 style={{ fontSize: "24px", color: "var(--accent-crimson)", marginBottom: "12px" }}>
             URGENT SAFETY STOP: Medical Clearance Required
           </h2>
@@ -151,9 +150,8 @@ export default function Train({ currentPlan, todayCheckIn, onWorkoutLogged, onNa
         </div>
       ) : successResult ? (
         <div className="card" style={{ textAlign: "center", padding: "40px 24px" }}>
-          <div style={{ fontSize: "48px", marginBottom: "16px" }}>🎉</div>
           <h2 style={{ fontSize: "24px", color: "var(--accent-primary)", marginBottom: "8px" }}>
-            Workout Logged Successfully!
+            Workout Logged Successfully
           </h2>
           <p style={{ color: "var(--text-secondary)", maxWidth: "480px", margin: "0 auto 24px auto" }}>
             Great effort. Your training metrics have been saved to your immutable performance log.
@@ -172,7 +170,7 @@ export default function Train({ currentPlan, todayCheckIn, onWorkoutLogged, onNa
               }}
             >
               <strong style={{ color: "var(--accent-cyan)", display: "block", marginBottom: "6px" }}>
-                🔄 Coach Engine Applied Adaptations:
+                Coach Engine Applied Adaptations:
               </strong>
               <ul style={{ paddingLeft: "20px", fontSize: "13px", color: "#e0f2fe" }}>
                 {successResult.adaptations.map((a, i) => (
@@ -205,7 +203,7 @@ export default function Train({ currentPlan, todayCheckIn, onWorkoutLogged, onNa
           <div className="card">
             <div className="card-header">
               <div>
-                <h2 className="card-title">⏱️ Live Workout Session</h2>
+                <h2 className="card-title">Live Workout Session</h2>
                 <p className="card-subtitle">
                   {todaySession?.purpose || todaySession?.title || "Scheduled Training Session"}
                 </p>
@@ -222,7 +220,7 @@ export default function Train({ currentPlan, todayCheckIn, onWorkoutLogged, onNa
                   className="btn btn-primary btn-lg"
                   onClick={() => setTimerRunning(true)}
                 >
-                  ▶ Start Workout
+                  Start Workout
                 </button>
               ) : (
                 <button
@@ -230,7 +228,7 @@ export default function Train({ currentPlan, todayCheckIn, onWorkoutLogged, onNa
                   className="btn btn-secondary btn-lg"
                   onClick={() => setTimerRunning(false)}
                 >
-                  ⏸ Pause
+                  Pause
                 </button>
               )}
 
@@ -251,7 +249,7 @@ export default function Train({ currentPlan, todayCheckIn, onWorkoutLogged, onNa
                 onClick={handleEarlyStop}
                 title="Stop workout early due to discomfort or fatigue"
               >
-                ⚠️ Stop Early
+                Stop Early
               </button>
             </div>
 
@@ -317,7 +315,7 @@ export default function Train({ currentPlan, todayCheckIn, onWorkoutLogged, onNa
           <div className="card">
             <div className="card-header">
               <div>
-                <h2 className="card-title">📝 Log Completed Activity</h2>
+                <h2 className="card-title">Log Completed Activity</h2>
                 <p className="card-subtitle">Record actual distance, time, and perceived effort</p>
               </div>
             </div>
@@ -455,7 +453,7 @@ export default function Train({ currentPlan, todayCheckIn, onWorkoutLogged, onNa
                 style={{ width: "100%", marginTop: "10px" }}
                 disabled={loading}
               >
-                {loading ? "Saving Activity..." : "✓ Log Activity & Check Adaptations →"}
+                {loading ? "Saving Activity..." : "Log Activity & Check Adaptations →"}
               </button>
             </form>
           </div>

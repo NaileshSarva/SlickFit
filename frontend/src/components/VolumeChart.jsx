@@ -19,11 +19,11 @@ export default function VolumeChart({ data = [] }) {
     );
   }
 
-  // Format data for Recharts
+  const hasPlannedSeries = data.some((item) => item.planned_km != null);
   const chartData = data.map((item) => ({
     week: item.week_label || item.week_start?.slice(5) || "Week",
-    planned_km: Number(item.planned_km || 0).toFixed(1),
-    actual_km: Number(item.actual_km || 0).toFixed(1),
+    planned_km: Number(item.planned_km || 0),
+    actual_km: Number(item.distance_km ?? item.actual_km ?? 0),
   }));
 
   return (
@@ -42,11 +42,15 @@ export default function VolumeChart({ data = [] }) {
               boxShadow: "0 12px 30px rgba(0,0,0,0.6)",
             }}
           />
-          <Legend
-            wrapperStyle={{ paddingTop: "10px", fontSize: "12px" }}
-            formatter={(value) => (value === "planned_km" ? "Planned (km)" : "Completed (km)")}
-          />
-          <Bar dataKey="planned_km" fill="rgba(56, 189, 248, 0.45)" radius={[6, 6, 0, 0]} />
+          {hasPlannedSeries && (
+            <Legend
+              wrapperStyle={{ paddingTop: "10px", fontSize: "12px" }}
+              formatter={(value) => (value === "planned_km" ? "Planned (km)" : "Completed (km)")}
+            />
+          )}
+          {hasPlannedSeries && (
+            <Bar dataKey="planned_km" fill="rgba(56, 189, 248, 0.45)" radius={[6, 6, 0, 0]} />
+          )}
           <Bar dataKey="actual_km" fill="var(--accent-primary)" radius={[6, 6, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>

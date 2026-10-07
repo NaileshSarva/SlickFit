@@ -126,21 +126,31 @@ export default function Plan({
   function getSessionTypeInfo(type) {
     switch (type) {
       case "rest":
-        return { label: "Active Recovery", tagClass: "tag-neutral", icon: "🛌", isRest: true };
+        return { label: "Active Recovery", tagClass: "tag-neutral", icon: "", isRest: true };
       case "recovery_walk":
-        return { label: "Recovery Walk", tagClass: "tag-neutral", icon: "🚶", isRest: true };
+        return { label: "Recovery Walk", tagClass: "tag-neutral", icon: "", isRest: true };
       case "long_run":
-        return { label: "Long Run", tagClass: "tag-amber", icon: "🏃‍♂️", isRest: false };
+      case "long_ride":
+        return { label: "Long Endurance", tagClass: "tag-amber", icon: "", isRest: false };
       case "intervals":
       case "interval":
-        return { label: "Intervals", tagClass: "tag-cyan", icon: "⚡", isRest: false };
+        return { label: "Intervals", tagClass: "tag-cyan", icon: "", isRest: false };
       case "tempo":
-        return { label: "Tempo Run", tagClass: "tag-orange", icon: "🔥", isRest: false };
+      case "tempo_ride":
+        return { label: "Tempo Session", tagClass: "tag-orange", icon: "", isRest: false };
       case "walk_run":
-        return { label: "Walk-Run Build", tagClass: "tag-emerald", icon: "👟", isRest: false };
+        return { label: "Walk-Run Build", tagClass: "tag-emerald", icon: "", isRest: false };
+      case "swim_session":
+        return { label: "Swim Training", tagClass: "tag-cyan", icon: "", isRest: false };
+      case "strength_session":
+        return { label: "Strength Training", tagClass: "tag-orange", icon: "", isRest: false };
+      case "match_conditioning":
+        return { label: "Match Conditioning", tagClass: "tag-amber", icon: "", isRest: false };
+      case "trek_conditioning":
+        return { label: "Trek Conditioning", tagClass: "tag-emerald", icon: "", isRest: false };
       case "easy_run":
       default:
-        return { label: "Easy Run", tagClass: "tag-emerald", icon: "🏃", isRest: false };
+        return { label: "Easy Session", tagClass: "tag-emerald", icon: "", isRest: false };
     }
   }
 
@@ -187,9 +197,6 @@ export default function Plan({
       <div>
         <DisclaimerBanner type="general" />
         <div className="state-container">
-          <div className="state-icon-orb" style={{ background: "var(--accent-crimson-dim)", borderColor: "rgba(239, 68, 68, 0.4)" }}>
-            ⚠️
-          </div>
           <h2 style={{ fontSize: "20px", marginBottom: "8px" }}>Unable to Load Training Plan</h2>
           <p className="muted" style={{ maxWidth: "480px", marginBottom: "20px" }}>{error}</p>
           <div style={{ display: "flex", gap: "12px" }}>
@@ -201,7 +208,7 @@ export default function Plan({
                 if (onRefreshData) onRefreshData();
               }}
             >
-              🔄 Retry Request
+              Retry Request
             </button>
             <button
               type="button"
@@ -222,7 +229,6 @@ export default function Plan({
       <div>
         <DisclaimerBanner type="general" />
         <div className="state-container">
-          <div className="state-icon-orb">📅</div>
           <h2 style={{ fontSize: "22px", marginBottom: "10px" }}>No Active Training Plan Found</h2>
           <p className="muted" style={{ maxWidth: "520px", marginBottom: "24px" }}>
             SlickFit generates a personalized, safety-bounded 7-day microcycle once your target event and baseline availability are registered.
@@ -243,7 +249,7 @@ export default function Plan({
                 if (onRefreshData) onRefreshData();
               }}
             >
-              Check Again 🔄
+              Check Again
             </button>
           </div>
         </div>
@@ -297,7 +303,7 @@ export default function Plan({
                 onClick={() => setShowHistoryModal(true)}
                 title="View immutable plan revisions and audit log"
               >
-                📜 Revision Audit ({history.length})
+                Revision Audit ({history.length})
               </button>
               <button
                 type="button"
@@ -309,7 +315,7 @@ export default function Plan({
                 }}
                 title="Refresh plan from server"
               >
-                🔄
+                Refresh
               </button>
             </div>
           </div>
@@ -554,7 +560,7 @@ export default function Plan({
           <div className="modal-content" style={{ maxWidth: "720px" }}>
             <div className="card-header">
               <div>
-                <h2 className="card-title" id="history-modal-title">📜 Plan Revision Audit History</h2>
+                <h2 className="card-title" id="history-modal-title">Plan Revision Audit History</h2>
                 <p className="card-subtitle">
                   Every plan change is snapshot-hashed and accompanied by a deterministic reasoning trigger.
                 </p>

@@ -56,7 +56,6 @@ export default function Landing({ onAuthSuccess }) {
       {/* Top Header */}
       <div style={{ textAlign: "center", marginBottom: "40px" }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: "10px", marginBottom: "14px" }}>
-          <span style={{ fontSize: "36px" }}>⚡</span>
           <h1
             style={{
               fontSize: "42px",
@@ -95,7 +94,7 @@ export default function Landing({ onAuthSuccess }) {
         <div className="card">
           <div className="card-header">
             <div>
-              <h2 className="card-title">🚀 1-Click Instant Demo Experience</h2>
+              <h2 className="card-title">Instant Demo Profiles</h2>
               <p className="card-subtitle">Zero setup required. Explore fully provisioned test runners.</p>
             </div>
             <span className="tag tag-orange">Local Demo</span>
@@ -113,7 +112,7 @@ export default function Landing({ onAuthSuccess }) {
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", flexWrap: "wrap", gap: "8px" }}>
                 <strong style={{ fontSize: "15px", color: "var(--text-primary)" }}>
-                  🏃‍♂️ Arjun Sharma — 10K Target
+                  Arjun Sharma — 10K Target
                 </strong>
                 <span className="tag tag-cyan">Intermediate</span>
               </div>
@@ -142,7 +141,7 @@ export default function Landing({ onAuthSuccess }) {
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", flexWrap: "wrap", gap: "8px" }}>
                 <strong style={{ fontSize: "15px", color: "var(--text-primary)" }}>
-                  🌱 Priya Nair — Baseline Builder
+                  Priya Nair — Baseline Builder
                 </strong>
                 <span className="tag tag-amber">First-Time 5K</span>
               </div>

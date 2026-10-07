@@ -11,20 +11,25 @@ import {
 } from "recharts";
 
 export default function RecoveryChart({ data = [] }) {
-  if (!data || data.length === 0) {
+  const chartData = (Array.isArray(data) ? data : [])
+    .map((item) => {
+      const energy = Number(item.energy_level ?? item.metrics?.energy_level);
+      const soreness = Number(item.soreness_level ?? item.metrics?.soreness_level);
+      return {
+        date: item.local_date?.slice(5) || item.checkin_date?.slice(5) || item.date?.slice(5) || "Day",
+        energy_level: Number.isFinite(energy) ? energy : null,
+        soreness_level: Number.isFinite(soreness) ? soreness : null,
+      };
+    })
+    .filter((item) => item.energy_level !== null || item.soreness_level !== null);
+
+  if (chartData.length === 0) {
     return (
       <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-muted)" }}>
-        No recovery check-in logs recorded yet. Complete daily check-ins to view readiness trends.
+        No recovery check-ins with energy or soreness scores yet.
       </div>
     );
   }
-
-  const chartData = data.map((item) => ({
-    date: item.checkin_date?.slice(5) || item.local_date?.slice(5) || item.date?.slice(5) || "Day",
-    sleep_quality: item.sleep_quality,
-    soreness: item.soreness_level || item.soreness,
-    fatigue: item.fatigue || (item.energy_level ? 6 - item.energy_level : 2),
-  }));
 
   return (
     <div style={{ width: "100%", height: 260 }}>
@@ -42,35 +47,22 @@ export default function RecoveryChart({ data = [] }) {
               boxShadow: "0 12px 30px rgba(0,0,0,0.6)",
             }}
           />
-          <Legend
-            wrapperStyle={{ paddingTop: "10px", fontSize: "12px" }}
-            formatter={(value) => {
-              if (value === "sleep_quality") return "Sleep Quality (1-5)";
-              if (value === "soreness") return "Muscle Soreness (1-5)";
-              return "Fatigue Level (1-5)";
-            }}
-          />
           <Line
             type="monotone"
-            dataKey="sleep_quality"
+            dataKey="energy_level"
             stroke="var(--accent-primary)"
             strokeWidth={2.5}
             dot={{ r: 4, fill: "var(--accent-primary)" }}
+            connectNulls={false}
           />
           <Line
             type="monotone"
-            dataKey="soreness"
+            dataKey="soreness_level"
             stroke="var(--accent-amber)"
             strokeWidth={2}
             strokeDasharray="4 4"
             dot={{ r: 3, fill: "var(--accent-amber)" }}
-          />
-          <Line
-            type="monotone"
-            dataKey="fatigue"
-            stroke="var(--accent-cyan)"
-            strokeWidth={1.5}
-            dot={{ r: 3, fill: "var(--accent-cyan)" }}
+            connectNulls={false}
           />
         </LineChart>
       </ResponsiveContainer>

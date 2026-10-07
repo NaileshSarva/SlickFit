@@ -128,7 +128,7 @@ export default function Home({
         {activeEvent && (
           <div className="action-pill-group" onClick={() => onNavigateTab("plan")} title="View event details">
             <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>
-              🎯 {activeEvent.title} {eventDaysLeft !== null ? `(${eventDaysLeft}d to go)` : ""}
+              {activeEvent.title} {eventDaysLeft !== null ? `(${eventDaysLeft}d to go)` : ""}
             </span>
             <span className="pill-icon-circle">→</span>
           </div>
@@ -137,7 +137,6 @@ export default function Home({
 
       {isRedFlagActive && (
         <div className="alert-banner alert-danger" style={{ marginBottom: "24px", padding: "18px 22px" }}>
-          <span style={{ fontSize: "28px" }}>🛑</span>
           <div>
             <strong style={{ fontSize: "16px", display: "block", marginBottom: "4px" }}>
               URGENT MEDICAL SAFETY LOCKOUT ACTIVE
@@ -161,7 +160,6 @@ export default function Home({
             <div style={{ position: "relative", zIndex: 2 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <span style={{ fontSize: "16px" }}>⚡</span>
                   <strong style={{ fontSize: "15px", color: "#FFFFFF" }}>Training Volume</strong>
                 </div>
                 <span className="tag tag-espresso" style={{ fontSize: "10px", padding: "2px 8px" }}>
@@ -170,7 +168,7 @@ export default function Home({
               </div>
 
               <div style={{ fontSize: "12px", color: "#ffcaa6", marginBottom: "14px" }}>
-                ⭐ Active microcycle in progress — on track with consistency
+                Active microcycle in progress — on track with consistency
               </div>
 
               {/* Filter Pills */}
@@ -257,7 +255,7 @@ export default function Home({
           <div className="card">
             <div className="card-header">
               <div>
-                <h2 className="card-title">🛌 Recovery & Sleep Score</h2>
+                <h2 className="card-title">Recovery & Sleep Score</h2>
                 <p className="card-subtitle">
                   {todayCheckIn ? "Logged for today" : "Not yet recorded today"}
                 </p>
@@ -313,7 +311,7 @@ export default function Home({
             {/* Circular Gauge 1: Consistency */}
             <div className="card" style={{ padding: "18px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                <strong style={{ fontSize: "13px", color: "var(--text-primary)" }}>🏃 Adherence</strong>
+                <strong style={{ fontSize: "13px", color: "var(--text-primary)" }}>Adherence</strong>
                 <span style={{ fontSize: "12px", color: "var(--accent-primary)" }}>↗</span>
               </div>
 
@@ -344,7 +342,7 @@ export default function Home({
             {/* Semicircular Arc Gauge 2: Stress / Tone */}
             <div className="card" style={{ padding: "18px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                <strong style={{ fontSize: "13px", color: "var(--text-primary)" }}>🧘 Stress</strong>
+                <strong style={{ fontSize: "13px", color: "var(--text-primary)" }}>Stress</strong>
                 <span style={{ fontSize: "12px", color: "var(--accent-cyan)" }}>↗</span>
               </div>
 
@@ -373,7 +371,6 @@ export default function Home({
           <div className="card" style={{ padding: "18px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ fontSize: "16px" }}>💧</span>
                 <strong style={{ fontSize: "14px", color: "var(--text-primary)" }}>Hydration Target</strong>
               </div>
               <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--accent-cyan)" }}>
@@ -399,7 +396,7 @@ export default function Home({
           <div className="card" style={{ padding: "18px" }}>
             <div className="card-header" style={{ marginBottom: "12px" }}>
               <div>
-                <strong style={{ fontSize: "14px", color: "var(--text-primary)" }}>🥗 Fuel & Calorie Blueprint</strong>
+                <strong style={{ fontSize: "14px", color: "var(--text-primary)" }}>Fuel & Calorie Blueprint</strong>
                 <p style={{ fontSize: "11px", color: "var(--text-muted)" }}>
                   {todayNutrition?.diet_type?.replace("_", " ") || "Vegetarian"} ({todayNutrition?.region?.replace("_", " ") || "North Indian"})
                 </p>
@@ -494,7 +491,7 @@ export default function Home({
             {/* CTA Buttons */}
             {isRedFlagActive ? (
               <div className="alert-banner alert-danger" style={{ marginBottom: 0, padding: "12px" }}>
-                🛑 Locked: Medical clearance required.
+                Locked: Medical clearance required.
               </div>
             ) : todaySession?.session_type !== "rest" ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -504,7 +501,7 @@ export default function Home({
                   style={{ width: "100%" }}
                   onClick={() => onNavigateTab("train")}
                 >
-                  ⏱️ Start Live Workout →
+                  Start Live Workout →
                 </button>
                 <button
                   type="button"
@@ -517,7 +514,7 @@ export default function Home({
               </div>
             ) : (
               <div className="alert-banner alert-info" style={{ marginBottom: 0, padding: "14px" }}>
-                🛌 Rest Day: Complete rest for tendon repair.
+                Rest Day: Complete rest for recovery.
               </div>
             )}
           </div>
@@ -525,7 +522,7 @@ export default function Home({
           {/* Coaching Engine Rationale Mini Card */}
           <div className="card" style={{ padding: "18px" }}>
             <div className="card-header" style={{ marginBottom: "8px" }}>
-              <strong style={{ fontSize: "13px", color: "var(--text-primary)" }}>🧠 Coaching Engine Rationale</strong>
+              <strong style={{ fontSize: "13px", color: "var(--text-primary)" }}>Coaching Engine Rationale</strong>
               <span className="tag tag-orange" style={{ fontSize: "9px" }}>Deterministic</span>
             </div>
             <p style={{ fontSize: "12px", color: "var(--text-secondary)", lineHeight: "1.5" }}>
@@ -543,7 +540,7 @@ export default function Home({
           <div className="card">
             <div className="card-header">
               <div>
-                <h2 className="card-title">📅 7-Day Rolling Microcycle Schedule</h2>
+                <h2 className="card-title">7-Day Rolling Microcycle Schedule</h2>
                 <p className="card-subtitle">Upcoming sessions and active recovery distribution</p>
               </div>
               <button

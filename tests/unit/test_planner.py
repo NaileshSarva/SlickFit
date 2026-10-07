@@ -126,5 +126,5 @@ def test_custom_event_planner_generates_general_guidance():
     active_sessions = [s for s in plan.seven_day_sessions if s.session_type != "rest"]
     assert len(active_sessions) == 3
     for sess in active_sessions:
-        assert sess.session_type == "custom_practice"
+        assert sess.session_type in ("custom_practice", "match_conditioning")
         assert sess.duration_min_max <= 50

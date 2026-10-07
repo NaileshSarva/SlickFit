@@ -113,7 +113,7 @@ export default function App() {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "36px", marginBottom: "12px" }}>⚡</div>
+          <div className="spinner" style={{ margin: "0 auto 16px auto" }} />
           <p style={{ color: "var(--text-secondary)", fontSize: "14px" }}>Loading SlickFit Coach...</p>
         </div>
       </div>
@@ -132,7 +132,7 @@ export default function App() {
         <header className="top-nav" style={{ justifyContent: "space-between" }}>
           <div className="brand-section">
             <div className="brand-logo">
-              <span>⚡</span> SlickFit
+              SlickFit
             </div>
             {user?.is_demo && <span className="brand-badge">Demo Mode</span>}
           </div>

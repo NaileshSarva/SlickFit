@@ -25,7 +25,11 @@ export default class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div className="card" style={{ padding: "32px", textAlign: "center", margin: "24px 0" }}>
-          <div style={{ fontSize: "36px", marginBottom: "12px" }}>⚠️</div>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto 12px auto", display: "block" }}>
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
           <h2 className="card-title" style={{ color: "var(--accent-primary)", marginBottom: "8px" }}>
             Something went wrong in this section
           </h2>
@@ -34,7 +38,7 @@ export default class ErrorBoundary extends React.Component {
           </p>
           <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
             <button type="button" className="btn btn-primary" onClick={this.handleRetry}>
-              🔄 Retry Section
+              Retry Section
             </button>
             <button
               type="button"

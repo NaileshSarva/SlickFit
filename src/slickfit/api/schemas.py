@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime as dt
 from typing import Any, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 EMAIL_PATTERN = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
 
@@ -114,16 +114,30 @@ class UserUpdateRequest(BaseModel):
 
 # -- Event Schemas ----------------------------------------------------
 class EventCreateRequest(BaseModel):
-    kind: str = Field(default="running", pattern="^(running|custom)$")
+    kind: str = Field(default="running", max_length=64)
     sport: str = Field(default="running", max_length=64)
     title: str = Field(min_length=2, max_length=255)
     event_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
     location: str = Field(default="", max_length=255)
-    goal_type: str = Field(default="finish", pattern="^(finish|build_capacity|target_time)$")
-    target_value: Optional[float] = Field(default=None, gt=0)
+    goal_type: str = Field(default="finish", max_length=64)
+    target_value: Optional[float] = Field(default=None, ge=0)
     target_unit: str = Field(default="km", max_length=32)
     demands: dict[str, Any] = Field(default_factory=dict)
     notes: str = Field(default="", max_length=1000)
+
+    @field_validator("target_value", mode="before")
+    @classmethod
+    def coerce_target_value(cls, v: Any) -> Optional[float]:
+        if v is None or v == "" or v == "null":
+            return None
+        return float(v)
+
+    @field_validator("kind", "sport", "goal_type", mode="before")
+    @classmethod
+    def sanitize_event_strings(cls, v: Any) -> str:
+        if v is None or not str(v).strip():
+            return "running"
+        return str(v).strip().lower()
 
 
 class EventResponse(BaseModel):
@@ -149,26 +163,49 @@ class EventResponse(BaseModel):
 # -- Onboarding Intake Schemas ----------------------------------------
 class BaselineIntakeRequest(BaseModel):
     experience_level: Optional[str] = Field(default=None, max_length=32)
-    recent_weekly_km: Optional[float] = Field(default=None, ge=0, le=300)
-    recent_runs_per_week: Optional[int] = Field(default=None, ge=0, le=7)
-    recent_race_distance_km: Optional[float] = Field(default=None, gt=0, le=100)
-    recent_race_time_sec: Optional[int] = Field(default=None, gt=0, le=86400)
-    easy_pace_sec_per_km: Optional[int] = Field(default=None, ge=180, le=720)
+    recent_weekly_km: Optional[float] = Field(default=None, ge=0, le=500)
+    recent_runs_per_week: Optional[int] = Field(default=None, ge=0, le=14)
+    recent_race_distance_km: Optional[float] = Field(default=None, gt=0, le=300)
+    recent_race_time_sec: Optional[int] = Field(default=None, gt=0, le=864000)
+    easy_pace_sec_per_km: Optional[int] = Field(default=None, ge=120, le=1800)
+
+    @field_validator("*", mode="before")
+    @classmethod
+    def coerce_empty_to_none(cls, v: Any) -> Any:
+        if v == "" or v == "null":
+            return None
+        return v
 
 
 class AvailabilityIntakeRequest(BaseModel):
     training_days: list[str] = Field(default_factory=lambda: ["monday", "wednesday", "friday", "saturday"])
-    daily_time_cap_min: int = Field(default=60, ge=20, le=180)
+    daily_time_cap_min: int = Field(default=60, ge=15, le=360)
     preferred_times: list[str] = Field(default_factory=lambda: ["morning"])
     environment_equipment: str = Field(default="road_outdoor", max_length=255)
+
+    @field_validator("training_days", mode="before")
+    @classmethod
+    def normalize_training_days(cls, v: Any) -> list[str]:
+        if not v:
+            return ["monday", "wednesday", "friday", "saturday"]
+        if isinstance(v, str):
+            v = [item.strip() for item in v.split(",") if item.strip()]
+        return [str(d).strip().lower() for d in v if str(d).strip()]
 
 
 class ProfileIntakeRequest(BaseModel):
     age_band: Optional[str] = Field(default=None, max_length=32)
     sex: Optional[str] = Field(default=None, max_length=32)
-    height_cm: Optional[float] = Field(default=None, ge=100, le=250)
-    weight_kg: Optional[float] = Field(default=None, ge=30, le=250)
+    height_cm: Optional[float] = Field(default=None, ge=50, le=280)
+    weight_kg: Optional[float] = Field(default=None, ge=20, le=350)
     region: Optional[str] = Field(default=None, max_length=128)
+
+    @field_validator("*", mode="before")
+    @classmethod
+    def coerce_empty_profile_fields(cls, v: Any) -> Any:
+        if v == "" or v == "null":
+            return None
+        return v
 
 
 class NutritionIntakeRequest(BaseModel):
@@ -177,6 +214,31 @@ class NutritionIntakeRequest(BaseModel):
     allergies: list[str] = Field(default_factory=list)
     foods_avoided: list[str] = Field(default_factory=list)
     goal_preference: str = Field(default="endurance_fueling", max_length=64)
+    intake_target_kcal: Optional[int] = Field(default=None, ge=500, le=10000)
+    activity_level: Optional[str] = Field(default=None, max_length=64)
+
+    @field_validator("allergies", "foods_avoided", mode="before")
+    @classmethod
+    def sanitize_exclusion_lists(cls, v: Any) -> list[str]:
+        if not v:
+            return []
+        if isinstance(v, str):
+            v = [x.strip() for x in v.split(",") if x.strip()]
+        return [str(item).strip().lower() for item in v if str(item).strip() and str(item).strip().lower() not in ("none", "null", "nil")]
+
+    @field_validator("intake_target_kcal", mode="before")
+    @classmethod
+    def coerce_kcal(cls, v: Any) -> Optional[int]:
+        if v == "" or v is None or v == "null":
+            return None
+        return int(v)
+
+    @field_validator("dietary_pattern", "regional_preference", "goal_preference", mode="before")
+    @classmethod
+    def sanitize_nutrition_strings(cls, v: Any) -> str:
+        if not v or not str(v).strip():
+            return "default"
+        return str(v).strip().lower()
 
 
 class OnboardingRequest(BaseModel):
@@ -261,6 +323,13 @@ class ActivityCreateRequest(BaseModel):
     pain_notes: str = Field(default="", max_length=500)
     notes: str = Field(default="", max_length=1000)
 
+    @field_validator("distance_km", "duration_min", mode="before")
+    @classmethod
+    def coerce_activity_numeric(cls, v: Any) -> Any:
+        if v == "" or v == "null":
+            return None
+        return v
+
 
 class ActivityUpdateRequest(BaseModel):
     duration_min: Optional[float] = Field(default=None, ge=0, le=600)
@@ -269,6 +338,13 @@ class ActivityUpdateRequest(BaseModel):
     completion_state: Optional[str] = Field(default=None, pattern="^(completed|partial|skipped)$")
     notes: Optional[str] = Field(default=None, max_length=1000)
     change_reason: str = Field(min_length=3, max_length=500)
+
+    @field_validator("distance_km", "duration_min", "perceived_effort", mode="before")
+    @classmethod
+    def coerce_update_numeric(cls, v: Any) -> Any:
+        if v == "" or v == "null":
+            return None
+        return v
 
 
 class ActivityResponse(BaseModel):
@@ -307,6 +383,13 @@ class DailyCheckInCreateRequest(BaseModel):
     pain_severity: int = Field(default=0, ge=0, le=10)
     red_flag_symptom: bool = False
     notes: str = Field(default="", max_length=500)
+
+    @field_validator("sleep_duration_hours", mode="before")
+    @classmethod
+    def coerce_sleep_duration(cls, v: Any) -> Optional[float]:
+        if v == "" or v == "null" or v is None:
+            return None
+        return float(v)
 
 
 class DailyCheckInResponse(BaseModel):

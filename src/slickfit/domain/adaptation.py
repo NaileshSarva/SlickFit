@@ -136,13 +136,15 @@ def evaluate_adaptation(
         return AdaptationDecision(
             should_adapt=False,
             reason_codes=["NO_SIGNIFICANT_DEVIATION"],
-            explanation="Training inputs are on track with your plan. No changes needed today.",
+            explanation="What changed: Plan kept intact. Why: Training inputs and recovery markers are on track. Event impact: Steady progression toward target event.",
             safety_stop=False,
             adjusted_sessions=[],
         )
 
     # Build adjusted session prescriptions for future sessions (date >= today)
     adjusted_sessions: list[dict[str, Any]] = []
+    what_changed_list: list[str] = []
+
     for s in current_sessions:
         sess_data = {
             "id": s.id,
@@ -172,6 +174,8 @@ def evaluate_adaptation(
                 sess_data["duration_min_max"] = 25
                 sess_data["effort_target"] = "Very Gentle Walking (RPE 1-2)"
                 sess_data["reason_codes"].append("ADAPTED_FOR_PAIN_MITIGATION")
+                if "Converted upcoming workouts to gentle recovery walk" not in what_changed_list:
+                    what_changed_list.append("Converted upcoming workouts to gentle recovery walk")
             elif low_recovery:
                 # Reduce duration by 20-30% and ensure effort is strictly easy conversational
                 sess_data["duration_min_max"] = max(20, int(s.duration_min_max * 0.75))
@@ -180,16 +184,24 @@ def evaluate_adaptation(
                     sess_data["distance_km_max"] = round(sess_data["distance_km_max"] * 0.75, 1)
                 sess_data["effort_target"] = "Very Easy / Conversational (RPE 2-3)"
                 sess_data["reason_codes"].append("ADAPTED_FOR_LOW_RECOVERY")
+                if "Reduced workout volume by 25% with conversational effort" not in what_changed_list:
+                    what_changed_list.append("Reduced workout volume by 25% with conversational effort")
             elif high_effort:
                 if s.session_type in ("tempo", "intervals"):
                     sess_data["session_type"] = "easy_run"
                     sess_data["purpose"] = "Converted quality workout to easy aerobic run for fatigue recovery"
                     sess_data["effort_target"] = "Easy / Conversational (RPE 3-4)"
                     sess_data["reason_codes"].append("DOWNGRADED_QUALITY_WORKOUT")
+                    if "Replaced high-intensity workout with easy aerobic session" not in what_changed_list:
+                        what_changed_list.append("Replaced high-intensity workout with easy aerobic session")
 
         adjusted_sessions.append(sess_data)
 
-    full_explanation = " ".join(explanation_parts)
+    what_changed = "; ".join(what_changed_list) if what_changed_list else "Adjusted upcoming microcycle schedule"
+    why = " ".join(explanation_parts)
+    event_impact = "Protects long-term aerobic consistency and prevents overuse injury without sacrificing overall readiness."
+    full_explanation = f"What changed: {what_changed}. Why: {why} Event impact: {event_impact}"
+
     return AdaptationDecision(
         should_adapt=True,
         reason_codes=reason_codes,

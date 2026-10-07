@@ -40,7 +40,15 @@ async function apiRequest(endpoint, options = {}) {
     let errorDetail = "An unexpected error occurred.";
     try {
       const errJson = await response.json();
-      errorDetail = errJson.message || errJson.detail || JSON.stringify(errJson);
+      if (errJson.field_errors && Array.isArray(errJson.field_errors) && errJson.field_errors.length > 0) {
+        const details = errJson.field_errors.map((fe) => {
+          const loc = fe.loc && fe.loc.length > 0 ? fe.loc.slice(1).join(".") : "";
+          return loc ? `${loc}: ${fe.msg}` : fe.msg;
+        }).join("; ");
+        errorDetail = `${errJson.message || "Validation Error"}: ${details}`;
+      } else {
+        errorDetail = errJson.message || errJson.detail || JSON.stringify(errJson);
+      }
     } catch {
       errorDetail = `HTTP ${response.status} ${response.statusText}`;
     }

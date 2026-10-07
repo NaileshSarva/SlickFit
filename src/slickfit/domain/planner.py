@@ -343,6 +343,90 @@ def generate_initial_running_plan(
     )
 
 
+def _get_sport_session_template(
+    sport: str,
+    event_title: str,
+    time_cap: int,
+    is_weekend: bool,
+    demands_description: str,
+) -> tuple[str, str, str, list[PlannedWorkoutBlock], str]:
+    """Return tailored session type, purpose, effort target, blocks, and reason code for non-running sports."""
+    s = sport.lower()
+    if "cycl" in s or "bike" in s:
+        if is_weekend:
+            sess_type = "long_ride"
+            purpose = f"Aerobic endurance ride for {event_title}"
+            effort = "Zone 2 Steady Cadence (RPE 3-4)"
+            blocks = [
+                PlannedWorkoutBlock(name="warmup", description="10 min easy spinning at 85-90 RPM", duration_min=10),
+                PlannedWorkoutBlock(name="main_set", description=f"Continuous aerobic endurance ride: {demands_description or 'Steady pace with hydration practice'}", duration_min=max(20, time_cap - 20)),
+                PlannedWorkoutBlock(name="cooldown", description="10 min light cool-down spin & leg stretches", duration_min=10),
+            ]
+            code = "CYCLING_ENDURANCE_BUILD"
+        else:
+            sess_type = "tempo_ride"
+            purpose = f"Pacing & cadence intervals for {event_title}"
+            effort = "Moderate-High (RPE 5-7)"
+            blocks = [
+                PlannedWorkoutBlock(name="warmup", description="10 min progressive warm-up spin", duration_min=10),
+                PlannedWorkoutBlock(name="main_set", description="Interval efforts with controlled recovery intervals", duration_min=max(15, time_cap - 20)),
+                PlannedWorkoutBlock(name="cooldown", description="10 min easy spinning", duration_min=10),
+            ]
+            code = "CYCLING_TEMPO_PRACTICE"
+    elif "swim" in s:
+        sess_type = "swim_session"
+        purpose = f"Technique, stroke efficiency & stamina for {event_title}"
+        effort = "Moderate / Technique Focused (RPE 4-6)"
+        blocks = [
+            PlannedWorkoutBlock(name="warmup", description="200m easy warm-up (mix strokes + mobility)", duration_min=10),
+            PlannedWorkoutBlock(name="main_set", description=f"Structured drill & pacing set: {demands_description or 'Continuous sets with 30s rest'}", duration_min=max(15, time_cap - 20)),
+            PlannedWorkoutBlock(name="cooldown", description="150m easy backstroke / gentle swim & stretching", duration_min=10),
+        ]
+        code = "SWIMMING_ENDURANCE_DRILL"
+    elif "strength" in s or "weight" in s or "powerlift" in s:
+        sess_type = "strength_session"
+        purpose = f"Movement quality, power & strength foundation for {event_title}"
+        effort = "RPE 7-8 / 2-3 RIR (Reps in Reserve)"
+        blocks = [
+            PlannedWorkoutBlock(name="warmup", description="10 min joint mobility, hip openers & light warm-up sets", duration_min=10),
+            PlannedWorkoutBlock(name="main_set", description=f"Primary compound lifts & accessory work: {demands_description or 'Focus on technical execution and rest intervals'}", duration_min=max(20, time_cap - 20)),
+            PlannedWorkoutBlock(name="cooldown", description="10 min decompressing stretches & core stability", duration_min=10),
+        ]
+        code = "STRENGTH_DEVELOPMENT"
+    elif "foot" in s or "cric" in s or "bask" in s or "badmin" in s or "tenn" in s or "volley" in s or "kabad" in s:
+        sess_type = "match_conditioning"
+        purpose = f"Agility, interval stamina & match-play simulation for {event_title}"
+        effort = "Dynamic / Intermittent High Effort (RPE 6-7)"
+        blocks = [
+            PlannedWorkoutBlock(name="warmup", description="10 min dynamic agility drills, deceleration & multidirectional warm-up", duration_min=10),
+            PlannedWorkoutBlock(name="main_set", description=f"Sport-specific drills, footwork & conditioning: {demands_description or 'High-intensity intervals with recovery periods'}", duration_min=max(15, time_cap - 20)),
+            PlannedWorkoutBlock(name="cooldown", description="10 min slow jogging & full-body static stretches", duration_min=10),
+        ]
+        code = "SPORT_SPECIFIC_CONDITIONING"
+    elif "hik" in s or "trek" in s:
+        sess_type = "trek_conditioning"
+        purpose = f"Incline stamina, leg endurance & pack conditioning for {event_title}"
+        effort = "Sustained Aerobic (RPE 4-5)"
+        blocks = [
+            PlannedWorkoutBlock(name="warmup", description="10 min lower-leg mobility & ankle activations", duration_min=10),
+            PlannedWorkoutBlock(name="main_set", description=f"Incline walking / stair conditioning: {demands_description or 'Weighted pack or incline walking with steady breathing'}", duration_min=max(20, time_cap - 20)),
+            PlannedWorkoutBlock(name="cooldown", description="10 min calf, hamstring & hip flexor stretches", duration_min=10),
+        ]
+        code = "HIKING_TREK_PREPARATION"
+    else:
+        sess_type = "custom_practice"
+        purpose = f"Conditioning & skills practice for {event_title}"
+        effort = "Moderate / Technical Effort (RPE 5-6)"
+        blocks = [
+            PlannedWorkoutBlock(name="warmup", description="10 min full body mobility", duration_min=10),
+            PlannedWorkoutBlock(name="main_set", description=f"Structured activity practice: {demands_description or 'Skill and conditioning'}", duration_min=max(15, time_cap - 20)),
+            PlannedWorkoutBlock(name="cooldown", description="10 min stretch & cool down", duration_min=10),
+        ]
+        code = "CUSTOM_EVENT_PRACTICE"
+
+    return sess_type, purpose, effort, blocks, code
+
+
 def generate_initial_custom_event_plan(
     start_date_str: str,
     event_date_str: str,
@@ -424,37 +508,41 @@ def generate_initial_custom_event_plan(
                 distance_km_min=0.0,
                 distance_km_max=0.0,
                 effort_target="Complete Rest",
-                blocks=[PlannedWorkoutBlock(name="main_set", description="Recovery day.", duration_min=0)],
+                blocks=[PlannedWorkoutBlock(name="main_set", description="Recovery day. Hydrate, rest, and sleep well.", duration_min=0)],
                 target_pace_sec_per_km=None,
                 priority="rest",
                 flexibility_window_days=0,
                 reason_codes=["SCHEDULED_REST_DAY"],
             )
         else:
+            is_weekend = weekday_name in ("saturday", "sunday")
+            sess_type, purpose, effort, blocks, code = _get_sport_session_template(
+                sport=sport_category,
+                event_title=event_title,
+                time_cap=time_cap,
+                is_weekend=is_weekend,
+                demands_description=demands_description,
+            )
             session = GeneratedSession(
                 local_date=curr_date.isoformat(),
                 weekday=weekday_name,
-                session_type="custom_practice",
-                purpose=f"Conditioning & skills practice for {event_title}",
-                duration_min_min=max(25, time_cap - 15),
+                session_type=sess_type,
+                purpose=purpose,
+                duration_min_min=max(20, time_cap - 15),
                 duration_min_max=time_cap,
                 distance_km_min=None,
                 distance_km_max=None,
-                effort_target="Moderate / Technical Effort (RPE 5-6)",
-                blocks=[
-                    PlannedWorkoutBlock(name="warmup", description="10 min full body mobility", duration_min=10),
-                    PlannedWorkoutBlock(name="main_set", description=f"Structured activity practice: {demands_description or 'Skill and conditioning'}", duration_min=time_cap - 20),
-                    PlannedWorkoutBlock(name="cooldown", description="10 min stretch & cool down", duration_min=10),
-                ],
+                effort_target=effort,
+                blocks=blocks,
                 target_pace_sec_per_km=None,
                 priority="medium",
                 flexibility_window_days=1,
-                reason_codes=["CUSTOM_EVENT_PRACTICE", "GENERAL_CONDITIONING"],
+                reason_codes=[code, "GENERAL_CONDITIONING"],
             )
         seven_day_sessions.append(session)
 
     explanation = (
-        f"Custom general preparation schedule created for {event_title} ({sport_category}). "
+        f"Custom general preparation schedule created for {event_title} ({sport_category.capitalize()}). "
         f"Sessions are structured as editable conditioning and practice blocks respecting your {time_cap}-minute time cap. "
         "No sport-specific proprietary physiological model is claimed."
     )
