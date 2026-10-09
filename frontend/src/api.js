@@ -101,6 +101,13 @@ export async function updateMe(payload) {
   });
 }
 
+export async function updateProfileSettings(payload) {
+  return apiRequest("/me", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function logoutUser() {
   try {
     await apiRequest("/auth/logout", { method: "POST" });

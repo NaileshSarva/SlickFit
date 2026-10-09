@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime as dt
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -42,10 +42,13 @@ def log_activity(
     planned_session = None
     if body.planned_session_id:
         planned_session = db.get(PlannedSession, body.planned_session_id)
-        if planned_session and planned_session.user_id != current_user.id:
+        if not planned_session:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Planned session not found.")
+        if planned_session.user_id != current_user.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Planned session does not belong to user.")
-        if planned_session:
-            planned_session.status = body.completion_state
+        if planned_session.status != "scheduled":
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Planned session has already been logged.")
+        planned_session.status = body.completion_state
 
     activity = Activity(
         user_id=current_user.id,
@@ -94,14 +97,14 @@ def log_activity(
 def list_activities(
     current_user: CurrentUserDep,
     db: Annotated[Session, Depends(get_db)],
-    limit: int = 50,
+    limit: int = Query(default=50, ge=1, le=100),
 ) -> list[ActivityResponse]:
     """List logged workouts for the authenticated athlete."""
     activities = db.execute(
         select(Activity)
         .where(Activity.user_id == current_user.id)
         .order_by(Activity.local_date.desc(), Activity.created_at.desc())
-        .limit(min(100, limit))
+        .limit(limit)
     ).scalars().all()
     return [ActivityResponse.model_validate(a) for a in activities]
 

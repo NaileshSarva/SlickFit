@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime as dt
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -105,11 +106,79 @@ class UserResponse(BaseModel):
     nutrition_profile: Optional[NutritionProfileResponse] = None
 
 
+class ProfileSettingsUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    full_name: Optional[str] = Field(default=None, max_length=128)
+    timezone: Optional[str] = Field(default=None, max_length=64)
+    locale: Optional[str] = Field(default=None, max_length=32)
+    units: Optional[str] = Field(default=None, max_length=16)
+    age_band: Optional[str] = Field(default=None, max_length=32)
+    sex: Optional[str] = Field(default=None, max_length=32)
+    height_cm: Optional[float] = Field(default=None, ge=50, le=280)
+    weight_kg: Optional[float] = Field(default=None, ge=20, le=350)
+    region: Optional[str] = Field(default=None, max_length=128)
+    dietary_pattern: Optional[str] = Field(default=None, max_length=64)
+    regional_preference: Optional[str] = Field(default=None, max_length=64)
+    allergies: Optional[list[str]] = None
+    foods_avoided: Optional[list[str]] = None
+    goal_preference: Optional[str] = Field(default=None, max_length=64)
+    intake_target_kcal: Optional[int] = Field(default=None, ge=500, le=10000)
+    activity_level: Optional[str] = Field(default=None, max_length=64)
+
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        try:
+            ZoneInfo(value)
+        except (ZoneInfoNotFoundError, ValueError) as exc:
+            raise ValueError("Timezone must be a valid IANA timezone.") from exc
+        return value
+
+    @field_validator("units")
+    @classmethod
+    def validate_units(cls, value: Optional[str]) -> Optional[str]:
+        if value is not None and value not in {"metric", "imperial"}:
+            raise ValueError("Units must be 'metric' or 'imperial'.")
+        return value
+
+    @field_validator("allergies", "foods_avoided", mode="before")
+    @classmethod
+    def clean_preference_lists(cls, value: Any) -> Optional[list[str]]:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            value = value.split(",")
+        if not isinstance(value, list):
+            raise ValueError("Expected a list of preference values.")
+        cleaned = [str(item).strip().lower() for item in value if str(item).strip() and str(item).strip().lower() not in ("none", "null", "nil")]
+        return list(dict.fromkeys(cleaned))
+
+
 class UserUpdateRequest(BaseModel):
     full_name: Optional[str] = Field(default=None, max_length=128)
     timezone: Optional[str] = Field(default=None, max_length=64)
     locale: Optional[str] = Field(default=None, max_length=32)
     units: Optional[str] = Field(default=None, max_length=16)
+
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        try:
+            ZoneInfo(value)
+        except (ZoneInfoNotFoundError, ValueError) as exc:
+            raise ValueError("Timezone must be a valid IANA timezone.") from exc
+        return value
+
+    @field_validator("units")
+    @classmethod
+    def validate_units(cls, value: Optional[str]) -> Optional[str]:
+        if value is not None and value not in {"metric", "imperial"}:
+            raise ValueError("Units must be 'metric' or 'imperial'.")
+        return value
 
 
 # -- Event Schemas ----------------------------------------------------
@@ -131,6 +200,17 @@ class EventCreateRequest(BaseModel):
         if v is None or v == "" or v == "null":
             return None
         return float(v)
+
+    @field_validator("event_date")
+    @classmethod
+    def validate_event_date(cls, value: str) -> str:
+        try:
+            parsed = dt.date.fromisoformat(value)
+        except ValueError as exc:
+            raise ValueError("Event date must be a valid calendar date in YYYY-MM-DD format.") from exc
+        if parsed <= dt.date.today():
+            raise ValueError("Event date must be in the future.")
+        return value
 
     @field_validator("kind", "sport", "goal_type", mode="before")
     @classmethod
@@ -191,6 +271,14 @@ class AvailabilityIntakeRequest(BaseModel):
         if isinstance(v, str):
             v = [item.strip() for item in v.split(",") if item.strip()]
         return [str(d).strip().lower() for d in v if str(d).strip()]
+
+    @field_validator("training_days")
+    @classmethod
+    def validate_training_days(cls, value: list[str]) -> list[str]:
+        valid_days = {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
+        if not value or any(day not in valid_days for day in value) or len(set(value)) != len(value):
+            raise ValueError("Training days must contain unique weekday names.")
+        return value
 
 
 class ProfileIntakeRequest(BaseModel):
@@ -259,6 +347,7 @@ class PlannedSessionResponse(BaseModel):
     purpose: str
     duration_min_min: int
     duration_min_max: int
+    distance_unit: str
     distance_km_min: Optional[float]
     distance_km_max: Optional[float]
     effort_target: str

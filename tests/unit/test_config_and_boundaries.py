@@ -65,3 +65,24 @@ def test_demo_mode_override_behavior():
         raw_demo_mode="false",
     )
     assert cfg_disabled_in_dev.demo_mode_enabled is False
+
+
+def test_user_update_rejects_invalid_timezone_and_units():
+    from pydantic import ValidationError
+    from src.slickfit.api.schemas import UserUpdateRequest
+
+    with pytest.raises(ValidationError):
+        UserUpdateRequest(timezone="Not/A_Timezone")
+    with pytest.raises(ValidationError):
+        UserUpdateRequest(units="parsecs")
+    assert UserUpdateRequest(timezone="Asia/Kolkata", units="metric").units == "metric"
+
+
+def test_availability_rejects_invalid_or_duplicate_weekdays():
+    from pydantic import ValidationError
+    from src.slickfit.api.schemas import AvailabilityIntakeRequest
+
+    with pytest.raises(ValidationError):
+        AvailabilityIntakeRequest(training_days=["monday", "monday"])
+    with pytest.raises(ValidationError):
+        AvailabilityIntakeRequest(training_days=["funday"])

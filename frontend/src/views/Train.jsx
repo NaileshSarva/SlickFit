@@ -2,13 +2,15 @@ import React, { useState, useEffect, useRef } from "react";
 import { logActivity } from "../api.js";
 import DisclaimerBanner from "../components/DisclaimerBanner.jsx";
 
-export default function Train({ currentPlan, todayCheckIn, onWorkoutLogged, onNavigateTab }) {
+export default function Train({ currentPlan, todayCheckIn, activeEvent, onWorkoutLogged, onNavigateTab }) {
   const todayStr = new Date().toISOString().slice(0, 10);
   const sessions = currentPlan?.sessions || [];
   const todaySession =
     sessions.find((s) => (s.local_date || s.scheduled_date) === todayStr) ||
     sessions[0] ||
     null;
+  const activityType = activeEvent?.sport || "running";
+  const distanceUnit = activityType === "swimming" ? "m" : activityType === "running" || activityType === "cycling" ? "km" : "";
 
   // Red-Flag Safety Lockout
   const isRedFlagActive = Boolean(
@@ -86,9 +88,9 @@ export default function Train({ currentPlan, todayCheckIn, onWorkoutLogged, onNa
       const payload = {
         planned_session_id: todaySession?.id || null,
         local_date: todayStr,
-        activity_type: "running",
+        activity_type: activityType,
         duration_min: durationMin,
-        distance_km: completedDist !== "" ? Number(completedDist) : null,
+        distance_km: distanceUnit === "km" && completedDist !== "" ? Number(completedDist) : null,
         perceived_effort: Number(rpe),
         completion_state: stoppedEarly ? "partial" : "completed",
         early_stop_reason: stoppedEarly ? earlyStopReason : "",
@@ -211,6 +213,11 @@ export default function Train({ currentPlan, todayCheckIn, onWorkoutLogged, onNa
               <span className="tag tag-orange">Interactive Stopwatch</span>
             </div>
 
+            <div className="workout-block-item" style={{ marginBottom: "14px" }}>
+              <div><strong>Session target</strong><p className="muted">{todaySession?.purpose || "No session is scheduled in this 7-day window."}</p></div>
+              {todaySession?.effort_target && <span className="tag tag-cyan">{todaySession.effort_target}</span>}
+            </div>
+
             <div className="timer-display">{formatTimer(elapsedSeconds)}</div>
 
             <div style={{ display: "flex", justifyContent: "center", gap: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
@@ -325,7 +332,7 @@ export default function Train({ currentPlan, todayCheckIn, onWorkoutLogged, onNa
             <form onSubmit={handleLogActivity}>
               <div className="grid-2">
                 <div className="form-group">
-                  <label className="form-label">Completed Distance (km)</label>
+                  <label className="form-label">Completed Distance {distanceUnit ? `(${distanceUnit})` : "(optional)"}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -333,7 +340,7 @@ export default function Train({ currentPlan, todayCheckIn, onWorkoutLogged, onNa
                     className="form-input"
                     value={completedDist}
                     onChange={(e) => setCompletedDist(e.target.value)}
-                    required
+                    required={distanceUnit === "km"}
                   />
                 </div>
 

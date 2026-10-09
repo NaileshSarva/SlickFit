@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime as dt
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -72,13 +72,13 @@ def get_today_checkin(
 def list_recent_checkins(
     current_user: CurrentUserDep,
     db: Annotated[Session, Depends(get_db)],
-    limit: int = 30,
+    limit: int = Query(default=30, ge=1, le=100),
 ) -> list[DailyCheckInResponse]:
     """List recent check-ins for the authenticated athlete."""
     checkins = db.execute(
         select(DailyCheckIn)
         .where(DailyCheckIn.user_id == current_user.id)
         .order_by(DailyCheckIn.local_date.desc(), DailyCheckIn.created_at.desc())
-        .limit(min(100, limit))
+        .limit(limit)
     ).scalars().all()
     return [DailyCheckInResponse.model_validate(c) for c in checkins]

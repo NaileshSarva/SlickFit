@@ -60,3 +60,15 @@ def test_long_run_training_demand_elevates_carbs_and_hydration():
     assert long_advice.min_kcal > rest_advice.min_kcal
     assert long_advice.carbs_g_max > rest_advice.carbs_g_max
     assert long_advice.hydration_liters > rest_advice.hydration_liters
+
+
+def test_foods_avoided_are_filtered_and_user_kcal_target_is_used():
+    advice = generate_daily_nutrition_guidance(
+        dietary_pattern="vegetarian",
+        regional_preference="central_indian",
+        foods_avoided=["peanuts"],
+        intake_target_kcal=2300,
+        activity_level="high",
+    )
+    assert advice.min_kcal <= 2300 <= advice.max_kcal
+    assert all("peanut" not in meal["idea"].lower() for meal in advice.meal_ideas)

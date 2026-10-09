@@ -63,7 +63,7 @@ export default function Plan({
     loadHistory();
   }, []);
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: initialPlan?.current_revision?.timezone || "Asia/Kolkata" }).format(new Date());
   const sessions = plan?.sessions || [];
   const currentRev = plan?.current_revision || null;
 
@@ -150,7 +150,7 @@ export default function Plan({
         return { label: "Trek Conditioning", tagClass: "tag-emerald", icon: "", isRest: false };
       case "easy_run":
       default:
-        return { label: "Easy Session", tagClass: "tag-emerald", icon: "", isRest: false };
+    return { label: type ? type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Training Session", tagClass: "tag-emerald", icon: "", isRest: false };
     }
   }
 
@@ -260,6 +260,9 @@ export default function Plan({
   const eventTitle = plan.event_title || activeEvent?.title || "Target Event";
   const daysUntilEvent = plan.days_until_event != null ? plan.days_until_event : (activeEvent?.event_date ? Math.max(0, Math.ceil((new Date(activeEvent.event_date) - new Date()) / (1000 * 60 * 60 * 24))) : null);
   const targetDist = activeEvent?.target_value || activeEvent?.target_distance_km || null;
+  const sportLabel = activeEvent?.sport || activeEvent?.kind || "Event";
+  const activePhase = phases.find((phase) => phase.active);
+  const workload = sessions.filter((session) => session.session_type !== "rest").reduce((sum, session) => sum + (session.duration_min_max || 0), 0);
 
   return (
     <div>
@@ -285,14 +288,17 @@ export default function Plan({
                 )}
               </div>
 
-              <h1 style={{ fontSize: "28px", fontWeight: 800, marginTop: "6px" }}>
-                Active 7-Day Microcycle Plan
+                <h1 style={{ fontSize: "28px", fontWeight: 800, marginTop: "6px" }}>
+                Your {sportLabel} Preparation Plan
               </h1>
 
               <p style={{ color: "var(--text-secondary)", fontSize: "14px", marginTop: "6px" }}>
                 Target Event: <strong style={{ color: "var(--text-primary)" }}>{eventTitle}</strong>
-                {targetDist && ` (${targetDist} km)`}
+                {targetDist && ` (${targetDist} ${activeEvent?.target_unit || (sportLabel === "running" || sportLabel === "cycling" ? "km" : "target units")})`}
                 {daysUntilEvent !== null && ` • ${daysUntilEvent} days remaining`}
+              </p>
+              <p className="muted" style={{ marginTop: "8px" }}>
+                This view covers the current 7-day schedule. {activePhase ? `Current focus: ${activePhase.name}.` : "The plan is a short-horizon preparation schedule."} Approximate scheduled time: {workload} min.
               </p>
             </div>
 
@@ -368,8 +374,8 @@ export default function Plan({
       {/* 7-Day Rolling Schedule Cards */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", marginTop: "10px" }}>
         <div>
-          <h2 style={{ fontSize: "20px", fontWeight: 700 }}>Scheduled Sessions This Microcycle</h2>
-          <p className="muted">Deterministic daily workouts based on your availability and progressive recovery</p>
+                <h2 style={{ fontSize: "20px", fontWeight: 700 }}>Scheduled Sessions This Microcycle</h2>
+          <p className="muted">Expand any day to review the purpose, intensity, timing, and completion status. This is a 7-day view.</p>
         </div>
         <span className="tag tag-neutral">{sessions.length} Scheduled Days</span>
       </div>
@@ -427,6 +433,7 @@ export default function Plan({
                         </strong>
                         <span className={`tag ${typeInfo.tagClass}`}>{typeInfo.label}</span>
                         {isToday && <span className="tag tag-orange">Today</span>}
+                        {session.status && <span className={`tag ${session.status === "completed" ? "tag-emerald" : session.status === "skipped" ? "tag-amber" : "tag-neutral"}`}>{session.status}</span>}
                         {session.priority === "high" && <span className="tag tag-amber">Key Session</span>}
                       </div>
 
@@ -444,7 +451,7 @@ export default function Plan({
                         {distStr && (
                           <div style={{ textAlign: "center", minWidth: "65px" }}>
                             <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--text-primary)" }}>
-                              {distStr}
+                              {distStr} {session.distance_unit || "km"}
                             </div>
                             <div style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase" }}>
                               Distance

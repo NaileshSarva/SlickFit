@@ -42,6 +42,7 @@ class GeneratedSession:
     purpose: str
     duration_min_min: int
     duration_min_max: int
+    distance_unit: str
     distance_km_min: Optional[float]
     distance_km_max: Optional[float]
     effort_target: str
@@ -225,6 +226,7 @@ def generate_initial_running_plan(
                 purpose=f"Event Day: {event_title}",
                 duration_min_min=min(time_cap, int(target_distance_km * 6.5)),
                 duration_min_max=min(time_cap, int(target_distance_km * 7.5)),
+                distance_unit="km",
                 distance_km_min=target_distance_km,
                 distance_km_max=target_distance_km,
                 effort_target="Target Event Effort / Controlled Rhythm",
@@ -247,6 +249,7 @@ def generate_initial_running_plan(
                 purpose="Rest and physiological adaptation day",
                 duration_min_min=0,
                 duration_min_max=0,
+                distance_unit="km",
                 distance_km_min=0.0,
                 distance_km_max=0.0,
                 effort_target="Complete Rest / Light Mobility",
@@ -268,6 +271,7 @@ def generate_initial_running_plan(
                 purpose="Aerobic stamina development and endurance adaptation",
                 duration_min_min=max(35, long_run_duration - 5),
                 duration_min_max=min(time_cap, long_run_duration + 5),
+                distance_unit="km",
                 distance_km_min=max(3.0, long_km - 0.5),
                 distance_km_max=max(4.0, long_km + 0.5),
                 effort_target="Easy / Conversational (RPE 3-4)",
@@ -291,6 +295,7 @@ def generate_initial_running_plan(
                 purpose="Aerobic base building and recovery circulation",
                 duration_min_min=max(20, easy_run_duration - 5),
                 duration_min_max=min(time_cap, easy_run_duration + 5),
+                distance_unit="km",
                 distance_km_min=max(2.0, easy_km - 0.5),
                 distance_km_max=max(3.0, easy_km + 0.5),
                 effort_target="Easy / Conversational (RPE 3-4)",
@@ -505,6 +510,7 @@ def generate_initial_custom_event_plan(
                 purpose="Rest and recovery day",
                 duration_min_min=0,
                 duration_min_max=0,
+                distance_unit="",
                 distance_km_min=0.0,
                 distance_km_max=0.0,
                 effort_target="Complete Rest",
@@ -530,6 +536,7 @@ def generate_initial_custom_event_plan(
                 purpose=purpose,
                 duration_min_min=max(20, time_cap - 15),
                 duration_min_max=time_cap,
+                distance_unit="",
                 distance_km_min=None,
                 distance_km_max=None,
                 effort_target=effort,

@@ -242,6 +242,9 @@ def generate_daily_nutrition_guidance(
     allergies: Optional[list[str]] = None,
     training_demand_type: str = "easy_run",  # "easy_run" | "long_run" | "rest"
     weight_kg: Optional[float] = None,
+    foods_avoided: Optional[list[str]] = None,
+    activity_level: str = "moderate",
+    intake_target_kcal: Optional[int] = None,
 ) -> NutritionAdvice:
     """Generate non-clinical Indian nutrition guidance with strict allergy filtering."""
     pattern = (dietary_pattern or "vegetarian").strip().lower()
@@ -256,9 +259,10 @@ def generate_daily_nutrition_guidance(
 
     # Estimated broad caloric and macro bands based on training day
     w = weight_kg or 65.0
+    activity_factor = {"low": 0.92, "moderate": 1.0, "high": 1.08}.get((activity_level or "moderate").lower(), 1.0)
     if training_demand_type == "long_run":
-        min_kcal = int(w * 32)
-        max_kcal = int(w * 38)
+        min_kcal = int(w * 32 * activity_factor)
+        max_kcal = int(w * 38 * activity_factor)
         protein_g_min = int(w * 1.3)
         protein_g_max = int(w * 1.6)
         carbs_g_min = int(w * 4.5)
@@ -268,8 +272,8 @@ def generate_daily_nutrition_guidance(
         hydration = 3.5
         rationale = "Higher carbohydrate fueling and elevated hydration recommended for long aerobic endurance demands."
     elif training_demand_type == "rest":
-        min_kcal = int(w * 26)
-        max_kcal = int(w * 30)
+        min_kcal = int(w * 26 * activity_factor)
+        max_kcal = int(w * 30 * activity_factor)
         protein_g_min = int(w * 1.2)
         protein_g_max = int(w * 1.4)
         carbs_g_min = int(w * 3.0)
@@ -279,8 +283,8 @@ def generate_daily_nutrition_guidance(
         hydration = 2.5
         rationale = "Rest day nutrition focused on baseline protein repair, micronutrient density, and tissue recovery."
     else:  # easy_run / standard
-        min_kcal = int(w * 28)
-        max_kcal = int(w * 33)
+        min_kcal = int(w * 28 * activity_factor)
+        max_kcal = int(w * 33 * activity_factor)
         protein_g_min = int(w * 1.2)
         protein_g_max = int(w * 1.5)
         carbs_g_min = int(w * 3.5)
@@ -290,6 +294,10 @@ def generate_daily_nutrition_guidance(
         hydration = 3.0
         rationale = "Balanced aerobic training nutrition with steady complex carbohydrates and distributed protein."
 
+    if intake_target_kcal is not None:
+        min_kcal = min(min_kcal, intake_target_kcal)
+        max_kcal = max(min_kcal, intake_target_kcal)
+
     # Fetch meal ideas and filter allergens
     raw_meals = INDIAN_MEAL_IDEAS[pattern][region]
     filtered_meals: list[dict[str, Any]] = []
@@ -298,7 +306,8 @@ def generate_daily_nutrition_guidance(
         idea_text = item["idea"].lower()
         has_allergen = False
 
-        for allergen in allergies_list:
+        excluded = allergies_list + [item.strip().lower() for item in (foods_avoided or []) if item.strip()]
+        for allergen in excluded:
             keywords = ALLERGEN_KEYWORDS.get(allergen, [allergen])
             if any(kw in idea_text for kw in keywords):
                 has_allergen = True

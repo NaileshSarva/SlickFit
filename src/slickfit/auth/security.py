@@ -11,7 +11,6 @@ import datetime as dt
 import hashlib
 import hmac
 import json
-import os
 import secrets
 from typing import Any, Optional
 
@@ -113,6 +112,9 @@ def decode_access_token(token: str) -> Optional[dict[str, Any]]:
             return None
 
         header_b64, payload_b64, sig_b64 = parts
+        header = json.loads(_b64_url_decode(header_b64).decode("utf-8"))
+        if not isinstance(header, dict) or header.get("alg") != "HS256" or header.get("typ") != "JWT":
+            return None
         signing_input = f"{header_b64}.{payload_b64}".encode("ascii")
         expected_sig = hmac.new(
             settings.secret_key.encode("utf-8"),
@@ -128,7 +130,9 @@ def decode_access_token(token: str) -> Optional[dict[str, Any]]:
         payload = json.loads(payload_bytes.decode("utf-8"))
 
         now_ts = int(dt.datetime.now(dt.timezone.utc).timestamp())
-        if payload.get("exp") and payload["exp"] < now_ts:
+        if not isinstance(payload, dict) or not isinstance(payload.get("sub"), str):
+            return None
+        if not isinstance(payload.get("exp"), int) or payload["exp"] <= now_ts:
             return None
 
         return payload

@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime as dt
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -33,7 +33,7 @@ router = APIRouter(tags=["history_and_progress"])
 def get_unified_history(
     current_user: CurrentUserDep,
     db: Annotated[Session, Depends(get_db)],
-    limit: int = 50,
+    limit: int = Query(default=50, ge=1, le=100),
 ) -> list[HistoryFeedItem]:
     """Retrieve unified chronological feed of activities, check-ins, adaptations, and corrections."""
     items: list[HistoryFeedItem] = []

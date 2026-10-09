@@ -62,3 +62,19 @@ def test_expired_token_is_rejected():
         expires_delta=dt.timedelta(seconds=-5),
     )
     assert decode_access_token(token) is None
+
+
+def test_signed_token_with_wrong_algorithm_header_is_rejected():
+    import base64
+    import hashlib
+    import hmac
+    import json
+    from src.slickfit.config import settings
+
+    payload = {"sub": "user-1", "iat": 1, "exp": int(time.time()) + 60}
+    encode = lambda obj: base64.urlsafe_b64encode(json.dumps(obj, separators=(",", ":")).encode()).rstrip(b"=").decode()
+    header = encode({"alg": "none", "typ": "JWT"})
+    body = encode(payload)
+    message = f"{header}.{body}".encode("ascii")
+    signature = base64.urlsafe_b64encode(hmac.new(settings.secret_key.encode(), message, hashlib.sha256).digest()).rstrip(b"=").decode()
+    assert decode_access_token(f"{header}.{body}.{signature}") is None

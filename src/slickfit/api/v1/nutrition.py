@@ -39,7 +39,9 @@ def get_today_nutrition_guidance(
     dietary_pattern = nut_profile.dietary_pattern if nut_profile else "vegetarian"
     regional_preference = nut_profile.regional_preference if nut_profile else "south_indian"
     allergies = json.loads(nut_profile.allergies_json or "[]") if nut_profile else []
+    foods_avoided = json.loads(nut_profile.foods_avoided_json or "[]") if nut_profile else []
     weight_kg = ath_profile.weight_kg if ath_profile else None
+    intake_target_kcal = nut_profile.intake_target_kcal if nut_profile else None
 
     # Determine today's training demand
     training_demand_type = "easy_run"
@@ -50,7 +52,7 @@ def get_today_nutrition_guidance(
     if plan:
         latest_rev = db.execute(
             select(PlanRevision)
-            .where(PlanRevision.plan_id == plan.id)
+            .where(PlanRevision.plan_id == plan.id, PlanRevision.status == "current")
             .order_by(PlanRevision.revision_number.desc())
         ).scalar_one_or_none()
         if latest_rev:
@@ -65,8 +67,11 @@ def get_today_nutrition_guidance(
         dietary_pattern=dietary_pattern,
         regional_preference=regional_preference,
         allergies=allergies,
+        foods_avoided=foods_avoided,
         training_demand_type=training_demand_type,
         weight_kg=weight_kg,
+        activity_level=nut_profile.activity_level if nut_profile else "moderate",
+        intake_target_kcal=intake_target_kcal,
     )
 
     return NutritionGuidanceResponse(

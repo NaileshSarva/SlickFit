@@ -271,6 +271,7 @@ class PlannedSession(Base):
     purpose: Mapped[str] = mapped_column(Text, default="", nullable=False)
     duration_min_min: Mapped[int] = mapped_column(Integer, default=30, nullable=False)
     duration_min_max: Mapped[int] = mapped_column(Integer, default=45, nullable=False)
+    distance_unit: Mapped[str] = mapped_column(String(16), default="km", nullable=False)
     distance_km_min: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     distance_km_max: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     effort_target: Mapped[str] = mapped_column(
@@ -423,6 +424,7 @@ class NutritionProfile(Base):
         String(64), default="endurance_fueling", nullable=False
     )
     intake_target_kcal: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    activity_level: Mapped[str] = mapped_column(String(64), default="moderate", nullable=False)
     updated_at: Mapped[dt.datetime] = mapped_column(
         DateTime(timezone=True),
         default=utc_now,

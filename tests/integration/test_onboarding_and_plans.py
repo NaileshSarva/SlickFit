@@ -139,6 +139,21 @@ def test_complete_onboarding_for_custom_event(client_with_db):
     assert data["plan"]["algorithm_version"] == "slickfit_custom_v1"
 
 
+@pytest.mark.parametrize("event_date", ["2026-02-30", "not-a-date"])
+def test_invalid_event_date_is_rejected_without_completing_onboarding(client_with_db, event_date):
+    client = client_with_db
+    token = _get_auth_token(client, "invalid.date@slickfit.local")
+    response = client.post(
+        "/api/v1/onboarding",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"event": {"title": "Invalid date event", "event_date": event_date}},
+    )
+    assert response.status_code == 422
+    assert response.json()["code"] == "VALIDATION_ERROR"
+    assert any("event_date" in error["loc"] for error in response.json()["field_errors"])
+    assert client.get("/api/v1/onboarding/status", headers={"Authorization": f"Bearer {token}"}).json()["onboarding_completed"] is False
+
+
 def test_tenant_isolation_on_plans_and_events(client_with_db):
     client = client_with_db
     token_a = _get_auth_token(client, "user_a@slickfit.local")
@@ -158,3 +173,44 @@ def test_tenant_isolation_on_plans_and_events(client_with_db):
     res_b_plan = client.get("/api/v1/plans/current", headers={"Authorization": f"Bearer {token_b}"})
     assert res_b_plan.status_code == 404
     assert "No active training plan found" in res_b_plan.json()["message"]
+
+
+def test_current_plan_endpoint_selects_current_revision_status(client_with_db):
+    from sqlalchemy import select
+    from src.slickfit.db.models import PlanRevision
+
+    client = client_with_db
+    token = _get_auth_token(client, "current.revision@slickfit.local")
+    headers = {"Authorization": f"Bearer {token}"}
+    date = (dt.date.today() + dt.timedelta(days=30)).isoformat()
+    onboard = client.post(
+        "/api/v1/onboarding",
+        headers=headers,
+        json={"event": {"title": "Test 10K", "event_date": date}},
+    )
+    assert onboard.status_code == 201
+
+    db_gen = client.app.dependency_overrides[get_db]()
+    db = next(db_gen)
+    current = db.execute(select(PlanRevision)).scalar_one()
+    current.status = "superseded"
+    current.revision_number = 1
+    stale = PlanRevision(
+        plan_id=current.plan_id,
+        user_id=current.user_id,
+        revision_number=99,
+        input_snapshot_hash="stale",
+        start_date=current.start_date,
+        end_date=current.end_date,
+        phases_json=current.phases_json,
+        status="superseded",
+    )
+    db.add(stale)
+    db.flush()
+    current.status = "current"
+    db.commit()
+    db.close()
+
+    response = client.get("/api/v1/plans/current", headers=headers)
+    assert response.status_code == 200
+    assert response.json()["current_revision"]["status"] == "current"

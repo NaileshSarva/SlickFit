@@ -5,12 +5,15 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ...auth.dependencies import CurrentUserDep
 from ...auth.service import AuthService
+from ...db.models import AthleteProfile, NutritionProfile
 from ...db.session import get_db
-from ..schemas import UserResponse, UserUpdateRequest
+from ..schemas import ProfileSettingsUpdateRequest, UserResponse
+import json
 
 router = APIRouter(prefix="/me", tags=["users"])
 
@@ -23,7 +26,7 @@ def get_me(current_user: CurrentUserDep) -> UserResponse:
 
 @router.patch("", response_model=UserResponse)
 def update_me(
-    body: UserUpdateRequest,
+    body: ProfileSettingsUpdateRequest,
     current_user: CurrentUserDep,
     db: Annotated[Session, Depends(get_db)],
 ) -> UserResponse:
@@ -36,6 +39,33 @@ def update_me(
         current_user.locale = body.locale
     if body.units is not None:
         current_user.units = body.units
+
+    profile_fields = {"age_band", "sex", "height_cm", "weight_kg", "region"}
+    nutrition_fields = {
+        "dietary_pattern", "regional_preference", "allergies", "foods_avoided",
+        "goal_preference", "intake_target_kcal", "activity_level",
+    }
+    changes = body.model_dump(exclude_unset=True)
+    if profile_fields.intersection(changes):
+        profile = db.execute(select(AthleteProfile).where(AthleteProfile.user_id == current_user.id)).scalar_one_or_none()
+        if not profile:
+            profile = AthleteProfile(user_id=current_user.id)
+            db.add(profile)
+        for field in profile_fields.intersection(changes):
+            value = changes[field]
+            setattr(profile, field, value.strip() if isinstance(value, str) else value)
+
+    if nutrition_fields.intersection(changes):
+        nutrition = db.execute(select(NutritionProfile).where(NutritionProfile.user_id == current_user.id)).scalar_one_or_none()
+        if not nutrition:
+            nutrition = NutritionProfile(user_id=current_user.id)
+            db.add(nutrition)
+        for field in nutrition_fields.intersection(changes):
+            value = changes[field]
+            if field in ("allergies", "foods_avoided"):
+                setattr(nutrition, f"{field}_json", json.dumps(value or []))
+            elif value is not None:
+                setattr(nutrition, field, value.strip() if isinstance(value, str) else value)
 
     db.commit()
     db.refresh(current_user)

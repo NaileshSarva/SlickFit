@@ -184,6 +184,7 @@ export default function App() {
         <Train
           currentPlan={currentPlan}
           todayCheckIn={todayCheckIn}
+          activeEvent={activeEvent}
           onWorkoutLogged={refreshAppData}
           onNavigateTab={setActiveTab}
         />
@@ -206,7 +207,7 @@ export default function App() {
         <Profile
           user={user}
           activeEvent={activeEvent}
-          onUserUpdated={(updatedUser) => setUser(updatedUser)}
+          onUserUpdated={async (updatedUser) => { setUser(updatedUser); await refreshAppData(); }}
           onLogout={handleLogout}
         />
       )}

@@ -43,6 +43,25 @@ class OnboardingService:
         profile_data: Optional[dict[str, Any]] = None,
         nutrition_data: Optional[dict[str, Any]] = None,
     ) -> tuple[Event, Plan, PlanRevision, list[PlannedSession]]:
+        try:
+            return cls._complete_onboarding(
+                db, user_id, event_data, baseline_data, availability_data, profile_data, nutrition_data
+            )
+        except Exception:
+            db.rollback()
+            raise
+
+    @classmethod
+    def _complete_onboarding(
+        cls,
+        db: Session,
+        user_id: str,
+        event_data: dict[str, Any],
+        baseline_data: dict[str, Any],
+        availability_data: dict[str, Any],
+        profile_data: Optional[dict[str, Any]],
+        nutrition_data: Optional[dict[str, Any]],
+    ) -> tuple[Event, Plan, PlanRevision, list[PlannedSession]]:
         user = db.get(User, user_id)
         if not user:
             raise ValueError("User not found.")
@@ -222,6 +241,7 @@ class OnboardingService:
                 purpose=s.purpose,
                 duration_min_min=s.duration_min_min,
                 duration_min_max=s.duration_min_max,
+                distance_unit=s.distance_unit,
                 distance_km_min=s.distance_km_min,
                 distance_km_max=s.distance_km_max,
                 effort_target=s.effort_target,

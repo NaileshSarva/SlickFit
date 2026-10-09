@@ -103,6 +103,39 @@ def test_activity_logging_and_correction_flow(client_with_db):
     assert amend_res.json()[0]["replacement_value"] == "5.8"
 
 
+def test_unknown_planned_session_is_rejected(client_with_db):
+    client = client_with_db
+    setup = _setup_athlete_with_plan(client)
+    response = client.post(
+        "/api/v1/activities",
+        headers={"Authorization": f"Bearer {setup['token']}"},
+        json={
+            "planned_session_id": "not-a-real-session",
+            "local_date": dt.date.today().isoformat(),
+            "activity_type": "running",
+            "duration_min": 20,
+        },
+    )
+    assert response.status_code == 404
+    assert response.json()["message"] == "Planned session not found."
+
+
+def test_planned_session_cannot_be_logged_twice(client_with_db):
+    client = client_with_db
+    setup = _setup_athlete_with_plan(client)
+    auth_header = {"Authorization": f"Bearer {setup['token']}"}
+    payload = {
+        "planned_session_id": setup["session_id"],
+        "local_date": dt.date.today().isoformat(),
+        "activity_type": "running",
+        "duration_min": 20,
+        "completion_state": "completed",
+    }
+    assert client.post("/api/v1/activities", headers=auth_header, json=payload).status_code == 201
+    duplicate = client.post("/api/v1/activities", headers=auth_header, json=payload)
+    assert duplicate.status_code == 409
+
+
 def test_recovery_checkin_triggers_adaptation(client_with_db):
     client = client_with_db
     setup = _setup_athlete_with_plan(client)
@@ -131,6 +164,21 @@ def test_recovery_checkin_triggers_adaptation(client_with_db):
     revisions = history_res.json()
     assert len(revisions) >= 2
     assert "LOW_RECOVERY" in revisions[0]["explanation"] or "recovery" in revisions[0]["explanation"].lower()
+
+    # Reprocessing the same stale recovery signal must not keep creating revisions.
+    from sqlalchemy import select
+    from src.slickfit.db.models import Plan, PlanRevision
+    db = client_with_db.app.dependency_overrides[get_db]()
+    db = next(db)
+    from src.slickfit.domain.adaptation import AdaptationService
+    from src.slickfit.auth.security import decode_access_token
+    user_id = decode_access_token(setup["token"])["sub"]
+    current_revision = AdaptationService.process_adaptation(db, user_id, trigger_reason="DAILY_CHECKIN")
+    revisions_after_repeat = db.execute(
+        select(PlanRevision).join(Plan).where(Plan.user_id == user_id)
+    ).scalars().all()
+    assert len(revisions_after_repeat) == len(revisions)
+    db.close()
 
 
 def test_unified_history_and_progress_endpoints(client_with_db):

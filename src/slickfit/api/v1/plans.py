@@ -51,7 +51,7 @@ def get_current_plan(
     # Fetch latest revision
     latest_rev = db.execute(
         select(PlanRevision)
-        .where(PlanRevision.plan_id == plan.id)
+        .where(PlanRevision.plan_id == plan.id, PlanRevision.status == "current")
         .order_by(PlanRevision.revision_number.desc())
     ).scalar_one_or_none()
 

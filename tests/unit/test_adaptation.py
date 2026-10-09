@@ -133,3 +133,22 @@ def test_missed_session_does_not_stack_volume():
     assert decision.should_adapt is True
     assert "MISSED_SESSION_SAFELY_DROPPED" in decision.reason_codes
     assert "dropped rather than stacked" in decision.explanation
+
+
+def test_weekly_planner_duration_stays_within_time_cap_for_small_baseline():
+    from src.slickfit.domain.baseline import assess_running_baseline
+    from src.slickfit.domain.planner import generate_initial_running_plan
+
+    plan = generate_initial_running_plan(
+        start_date_str="2026-06-01",
+        event_date_str="2026-08-01",
+        event_title="5K",
+        target_distance_km=5.0,
+        goal_type="finish",
+        availability_days=["monday", "wednesday", "friday", "sunday"],
+        daily_time_cap_min=60,
+        baseline=assess_running_baseline(recent_weekly_km=5.0),
+    )
+    for session in plan.seven_day_sessions:
+        assert session.duration_min_max <= 60
+        assert session.duration_min_min <= session.duration_min_max

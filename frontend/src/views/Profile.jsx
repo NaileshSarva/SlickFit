@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { listAmendments, updateMe } from "../api.js";
+import { listAmendments, updateProfileSettings } from "../api.js";
 import DisclaimerBanner from "../components/DisclaimerBanner.jsx";
 
 export default function Profile({
@@ -11,6 +11,17 @@ export default function Profile({
   const [fullName, setFullName] = useState(user?.full_name || "");
   const [ageBand, setAgeBand] = useState(user?.profile?.age_band || user?.athlete_profile?.age_band || "");
   const [region, setRegion] = useState(user?.profile?.region || user?.athlete_profile?.region || "");
+  const [sex, setSex] = useState(user?.profile?.sex || "");
+  const [heightCm, setHeightCm] = useState(user?.profile?.height_cm ?? "");
+  const [weightKg, setWeightKg] = useState(user?.profile?.weight_kg ?? "");
+  const [timezone, setTimezone] = useState(user?.timezone || "Asia/Kolkata");
+  const [units, setUnits] = useState(user?.units || "metric");
+  const [dietaryPattern, setDietaryPattern] = useState(user?.nutrition_profile?.dietary_pattern || "vegetarian");
+  const [regionalPreference, setRegionalPreference] = useState(user?.nutrition_profile?.regional_preference || "south_indian");
+  const [allergies, setAllergies] = useState(() => { try { return JSON.parse(user?.nutrition_profile?.allergies_json || "[]"); } catch { return []; } });
+  const [foodsAvoided, setFoodsAvoided] = useState(() => { try { return JSON.parse(user?.nutrition_profile?.foods_avoided_json || "[]"); } catch { return []; } });
+  const [intakeTarget, setIntakeTarget] = useState(user?.nutrition_profile?.intake_target_kcal ?? "");
+  const [activityLevel, setActivityLevel] = useState(user?.nutrition_profile?.activity_level || "moderate");
   const [amendments, setAmendments] = useState([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -21,6 +32,17 @@ export default function Profile({
       setFullName(user.full_name || "");
       setAgeBand(user.profile?.age_band || user.athlete_profile?.age_band || "");
       setRegion(user.profile?.region || user.athlete_profile?.region || "");
+      setSex(user.profile?.sex || "");
+      setHeightCm(user.profile?.height_cm ?? "");
+      setWeightKg(user.profile?.weight_kg ?? "");
+      setTimezone(user.timezone || "Asia/Kolkata");
+      setUnits(user.units || "metric");
+      setDietaryPattern(user.nutrition_profile?.dietary_pattern || "vegetarian");
+      setRegionalPreference(user.nutrition_profile?.regional_preference || "south_indian");
+      try { setAllergies(JSON.parse(user.nutrition_profile?.allergies_json || "[]")); } catch { setAllergies([]); }
+      try { setFoodsAvoided(JSON.parse(user.nutrition_profile?.foods_avoided_json || "[]")); } catch { setFoodsAvoided([]); }
+      setIntakeTarget(user.nutrition_profile?.intake_target_kcal ?? "");
+      setActivityLevel(user.nutrition_profile?.activity_level || "moderate");
     }
   }, [user]);
 
@@ -46,14 +68,16 @@ export default function Profile({
     setMessage("");
 
     try {
-      const payload = {
-        full_name: fullName.trim() || undefined,
-        age_band: ageBand.trim() || null,
-        region: region.trim() || null,
-      };
-
-      const updated = await updateMe(payload);
-      setMessage("Profile settings updated successfully.");
+      const updated = await updateProfileSettings({
+        full_name: fullName.trim(), age_band: ageBand, region: region.trim(), sex,
+        height_cm: heightCm === "" ? null : Number(heightCm),
+        weight_kg: weightKg === "" ? null : Number(weightKg), timezone, units,
+        dietary_pattern: dietaryPattern, regional_preference: regionalPreference,
+        allergies, foods_avoided: foodsAvoided,
+        activity_level: activityLevel,
+        intake_target_kcal: intakeTarget === "" ? null : Number(intakeTarget),
+      });
+      setMessage("Profile and coaching preferences saved.");
       if (onUserUpdated) onUserUpdated(updated);
     } catch (err) {
       setError(err.message || "Failed to update profile.");
@@ -133,6 +157,34 @@ export default function Profile({
                 />
               </div>
             </div>
+
+            <div className="grid-2">
+              <div className="form-group">
+                <label className="form-label">Sex (Optional)</label>
+                <select className="form-select" value={sex} onChange={(e) => setSex(e.target.value)}>
+                  <option value="">Not specified</option><option value="female">Female</option><option value="male">Male</option><option value="another">Another identity</option><option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Height (cm, optional)</label>
+                <input className="form-input" type="number" min="50" max="280" value={heightCm} onChange={(e) => setHeightCm(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid-2">
+              <div className="form-group"><label className="form-label">Weight (kg, optional)</label><input className="form-input" type="number" min="20" max="350" step="0.1" value={weightKg} onChange={(e) => setWeightKg(e.target.value)} /></div>
+              <div className="form-group"><label className="form-label">Timezone</label><input className="form-input" value={timezone} onChange={(e) => setTimezone(e.target.value)} placeholder="Asia/Kolkata" /></div>
+            </div>
+            <div className="grid-2">
+              <div className="form-group"><label className="form-label">Units</label><select className="form-select" value={units} onChange={(e) => setUnits(e.target.value)}><option value="metric">Metric</option><option value="imperial">Imperial</option></select></div>
+              <div className="form-group"><label className="form-label">Diet preference</label><select className="form-select" value={dietaryPattern} onChange={(e) => setDietaryPattern(e.target.value)}><option value="vegetarian">Vegetarian</option><option value="eggetarian">Eggetarian</option><option value="non_vegetarian">Non-vegetarian</option><option value="vegan">Vegan</option><option value="jain">Jain</option><option value="swaminarayan">Swaminarayan</option></select></div>
+            </div>
+            <div className="grid-2">
+              <div className="form-group"><label className="form-label">Cuisine preference</label><select className="form-select" value={regionalPreference} onChange={(e) => setRegionalPreference(e.target.value)}><option value="south_indian">South Indian</option><option value="north_indian">North Indian</option><option value="west_indian">West Indian</option><option value="east_indian">East Indian</option><option value="central_indian">Central Indian</option><option value="pan_indian">Pan Indian</option></select></div>
+              <div className="form-group"><label className="form-label">Optional daily kcal target</label><input className="form-input" type="number" min="500" max="10000" value={intakeTarget} onChange={(e) => setIntakeTarget(e.target.value)} placeholder="No target set" /></div>
+            </div>
+            <div className="form-group"><label className="form-label">Typical activity level</label><select className="form-select" value={activityLevel} onChange={(e) => setActivityLevel(e.target.value)}><option value="low">Low / mostly seated</option><option value="moderate">Moderate / regularly active</option><option value="high">High / frequent training</option></select></div>
+            <div className="form-group"><label className="form-label">Allergies (comma separated)</label><input className="form-input" value={allergies.join(", ")} onChange={(e) => setAllergies(e.target.value.split(",").map((v) => v.trim()).filter(Boolean))} placeholder="peanuts, dairy" /></div>
+            <div className="form-group"><label className="form-label">Foods avoided (comma separated)</label><input className="form-input" value={foodsAvoided.join(", ")} onChange={(e) => setFoodsAvoided(e.target.value.split(",").map((v) => v.trim()).filter(Boolean))} placeholder="foods you prefer to avoid" /></div>
 
             <div style={{ display: "flex", gap: "12px", alignItems: "center", marginTop: "12px", flexWrap: "wrap" }}>
               <button type="submit" className="btn btn-primary" disabled={saving}>

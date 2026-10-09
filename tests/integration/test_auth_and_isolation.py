@@ -138,6 +138,43 @@ def test_invalid_login_and_validation_errors(client_with_isolated_db):
     assert len(val_err["field_errors"]) > 0
 
 
+def test_activity_list_rejects_unbounded_and_nonpositive_limits(client_with_isolated_db):
+    client = client_with_isolated_db
+    registration = client.post(
+        "/api/v1/auth/register",
+        json={"email": "limits@slickfit.local", "password": "ValidPassword123!"},
+    )
+    headers = {"Authorization": f"Bearer {registration.json()['access_token']}"}
+    assert client.get("/api/v1/activities?limit=100000", headers=headers).status_code == 422
+    assert client.get("/api/v1/activities?limit=0", headers=headers).status_code == 422
+
+
+def test_profile_settings_update_persists_athlete_and_nutrition_preferences(client_with_isolated_db):
+    client = client_with_isolated_db
+    registration = client.post(
+        "/api/v1/auth/register",
+        json={"email": "profile.edit@slickfit.local", "password": "ValidPassword123!"},
+    )
+    headers = {"Authorization": f"Bearer {registration.json()['access_token']}"}
+    response = client.patch(
+        "/api/v1/me",
+        headers=headers,
+        json={
+            "full_name": "Asha Athlete", "age_band": "30-39", "sex": "female",
+            "height_cm": 168, "weight_kg": 61.5, "region": "Pune",
+            "timezone": "Asia/Kolkata", "units": "metric",
+            "dietary_pattern": "vegan", "regional_preference": "west_indian",
+            "allergies": ["none", "peanuts", "peanuts"], "foods_avoided": ["mushrooms"],
+            "intake_target_kcal": 2200,
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["profile"]["weight_kg"] == 61.5
+    assert data["nutrition_profile"]["dietary_pattern"] == "vegan"
+    assert data["nutrition_profile"]["allergies_json"] == '["peanuts"]'
+
+
 def test_demo_login_accounts_and_tenant_isolation(client_with_isolated_db):
     client = client_with_isolated_db
 
@@ -203,4 +240,3 @@ def test_demo_login_disabled_when_demo_mode_false(client_with_isolated_db, monke
     res = client_with_isolated_db.post("/api/v1/auth/demo-login", json={"demo_key": "demo1"})
     assert res.status_code == 403
     assert "disabled" in res.json()["message"].lower()
-

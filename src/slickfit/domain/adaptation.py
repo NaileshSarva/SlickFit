@@ -153,6 +153,7 @@ def evaluate_adaptation(
             "purpose": s.purpose,
             "duration_min_min": s.duration_min_min,
             "duration_min_max": s.duration_min_max,
+            "distance_unit": s.distance_unit,
             "distance_km_min": s.distance_km_min,
             "distance_km_max": s.distance_km_max,
             "effort_target": s.effort_target,
@@ -235,7 +236,7 @@ class AdaptationService:
         # Fetch latest revision & its sessions
         latest_rev = db.execute(
             select(PlanRevision)
-            .where(PlanRevision.plan_id == plan.id)
+            .where(PlanRevision.plan_id == plan.id, PlanRevision.status == "current")
             .order_by(PlanRevision.revision_number.desc())
         ).scalar_one_or_none()
         if not latest_rev:
@@ -251,15 +252,25 @@ class AdaptationService:
         latest_checkin = db.execute(
             select(DailyCheckIn)
             .where(DailyCheckIn.user_id == user_id)
-            .order_by(DailyCheckIn.local_date.desc(), DailyCheckIn.created_at.desc())
+            .order_by(DailyCheckIn.created_at.desc())
         ).scalars().first()
 
         recent_acts = db.execute(
             select(Activity)
             .where(Activity.user_id == user_id)
-            .order_by(Activity.local_date.desc())
+            .order_by(Activity.local_date.desc(), Activity.created_at.desc())
             .limit(5)
         ).scalars().all()
+
+        # Do not re-apply a check-in or activity trigger after it has already
+        # produced a revision. Ignore inputs that predate the current revision.
+        if trigger_reason == "DAILY_CHECKIN":
+            if latest_checkin and latest_checkin.created_at and latest_checkin.created_at <= latest_rev.created_at:
+                latest_checkin = None
+        elif trigger_reason in ("ACTIVITY_LOGGED", "DATA_CORRECTED"):
+            if latest_checkin and latest_checkin.created_at and latest_checkin.created_at <= latest_rev.created_at:
+                latest_checkin = None
+        recent_acts = [a for a in recent_acts if a.created_at and a.created_at > latest_rev.created_at]
 
         decision = evaluate_adaptation(
             current_sessions=current_sessions,
@@ -323,6 +334,7 @@ class AdaptationService:
                 purpose=s_data["purpose"],
                 duration_min_min=s_data["duration_min_min"],
                 duration_min_max=s_data["duration_min_max"],
+                distance_unit=s_data.get("distance_unit", "km"),
                 distance_km_min=s_data["distance_km_min"],
                 distance_km_max=s_data["distance_km_max"],
                 effort_target=s_data["effort_target"],
